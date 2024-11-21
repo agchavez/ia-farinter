@@ -9,19 +9,12 @@ from torch.utils.data import DataLoader, TensorDataset
 def load_and_preprocess_data(csv_path):
     # Cargar el CSV
     df = pd.read_csv(csv_path)
-
-    # Convertir la columna 'Factura_Fecha' a formato datetime
-    df['Factura_Fecha'] = pd.to_datetime(df['Factura_Fecha'])
-
-    # Crear características adicionales de 'Factura_Fecha' (por ejemplo, día del mes, mes)
-    df['Dia_Mes'] = df['Factura_Fecha'].dt.day
-    df['Mes'] = df['Factura_Fecha'].dt.month
-
+    
     # Solo tomar la sucursal 1
-    df = df[df['Suc_Id'] == 1]
+    # df = df[df['Suc_Id'] == 1]
     
     # Seleccionar las características y la variable objetivo
-    X = df[['Suc_Id', 'Dia_Semana', 'Hora', 'Cantidad_Transacciones', 'Cajas_Activas', 'Dia_Mes', 'Mes']].values
+    X = df[['Suc_Id', 'Dia_Semana', 'Hora', 'Transacciones_Totales']].values
     y = df['Personal_Necesario'].values
 
     # Normalizar las características
@@ -41,7 +34,7 @@ def load_and_preprocess_data(csv_path):
 class DotacionPersonalNN(torch.nn.Module):
     def __init__(self):
         super(DotacionPersonalNN, self).__init__()
-        self.layer1 = torch.nn.Linear(7, 64)  # Capa de entrada (7 características)
+        self.layer1 = torch.nn.Linear(4, 64)  # Capa de entrada (4 características)
         self.layer2 = torch.nn.Linear(64, 32)  # Capa oculta
         self.layer3 = torch.nn.Linear(32, 1)  # Capa de salida
         self.relu = torch.nn.ReLU()  # Función de activación ReLU
@@ -192,7 +185,7 @@ def main_predict(model_path, scaler_path):
     
 if __name__ == "__main__":
     # Ruta del CSV con los datos
-    # csv_path = 'personal_necesario.csv'  # Actualiza la ruta al archivo CSV
-    # main(csv_path)
+    csv_path = 'personal_necesario.csv'  # Actualiza la ruta al archivo CSV
+    main(csv_path)
     
-    main_predict('model.pth', 'scaler.pkl')
+    #main_predict('model.pth', 'scaler.pkl')
