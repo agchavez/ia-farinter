@@ -1,0 +1,2 @@
+### Repositorio de analisis de tiempos de transacciones de puntos de venta
+Este repositorio contiene el código fuente y los datos necesarios para realizar un análisis de tiempos de transacciones de puntos de venta. El análisis se realiza en el lenguaje de programación Python y se utilizan las librerías pandas, numpy, matplotlib y seaborn.
