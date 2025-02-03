@@ -1,0 +1,354 @@
+"dia_semana": 1,
+"datos": [
+	{
+		"hora": 7,
+		"transacciones_totales": 4,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 20,
+		"transacciones_totales": 1,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 15,
+		"transacciones_totales": 12,
+		"personal_necesario": 1.6609355211257935
+	},
+	{
+		"hora": 14,
+		"transacciones_totales": 15,
+		"personal_necesario": 2.0698609352111816
+	},
+	{
+		"hora": 9,
+		"transacciones_totales": 6,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 12,
+		"transacciones_totales": 13,
+		"personal_necesario": 1.7935807704925537
+	},
+	{
+		"hora": 13,
+		"transacciones_totales": 14,
+		"personal_necesario": 1.9330086708068848
+	},
+	{
+		"hora": 16,
+		"transacciones_totales": 10,
+		"personal_necesario": 1.3863372802734375
+	},
+	{
+		"hora": 8,
+		"transacciones_totales": 5,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 19,
+		"transacciones_totales": 3,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 10,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.1003280878067017
+	},
+	{
+		"hora": 17,
+		"transacciones_totales": 6,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 18,
+		"transacciones_totales": 5,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 11,
+		"transacciones_totales": 14,
+		"personal_necesario": 1.9296172857284546
+	}
+]
+},
+"2025-02-04": {
+"dia_semana": 2,
+"datos": [
+	{
+		"hora": 8,
+		"transacciones_totales": 4,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 10,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.100480318069458
+	},
+	{
+		"hora": 15,
+		"transacciones_totales": 14,
+		"personal_necesario": 1.9369251728057861
+	},
+	{
+		"hora": 18,
+		"transacciones_totales": 5,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 19,
+		"transacciones_totales": 2,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 14,
+		"transacciones_totales": 9,
+		"personal_necesario": 1.2456004619598389
+	},
+	{
+		"hora": 12,
+		"transacciones_totales": 10,
+		"personal_necesario": 1.3803410530090332
+	},
+	{
+		"hora": 16,
+		"transacciones_totales": 10,
+		"personal_necesario": 1.3852367401123047
+	},
+	{
+		"hora": 7,
+		"transacciones_totales": 4,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 11,
+		"transacciones_totales": 10,
+		"personal_necesario": 1.3787176609039307
+	},
+	{
+		"hora": 17,
+		"transacciones_totales": 5,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 9,
+		"transacciones_totales": 6,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 13,
+		"transacciones_totales": 7,
+		"personal_necesario": 1
+	}
+]
+},
+"2025-02-05": {
+"dia_semana": 3,
+"datos": [
+	{
+		"hora": 6,
+		"transacciones_totales": 1,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 7,
+		"transacciones_totales": 2,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 12,
+		"transacciones_totales": 15,
+		"personal_necesario": 2.1918420791625977
+	},
+	{
+		"hora": 11,
+		"transacciones_totales": 9,
+		"personal_necesario": 1.299669861793518
+	},
+	{
+		"hora": 8,
+		"transacciones_totales": 7,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 9,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.1318819522857666
+	},
+	{
+		"hora": 13,
+		"transacciones_totales": 7,
+		"personal_necesario": 1.0041264295578003
+	},
+	{
+		"hora": 16,
+		"transacciones_totales": 10,
+		"personal_necesario": 1.4539674520492554
+	},
+	{
+		"hora": 15,
+		"transacciones_totales": 11,
+		"personal_necesario": 1.606316328048706
+	},
+	{
+		"hora": 14,
+		"transacciones_totales": 12,
+		"personal_necesario": 1.7553032636642456
+	},
+	{
+		"hora": 18,
+		"transacciones_totales": 7,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 17,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.1508039236068726
+	},
+	{
+		"hora": 19,
+		"transacciones_totales": 3,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 10,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.1474871635437012
+	}
+]
+},
+"2025-02-06": {
+"dia_semana": 4,
+"datos": [
+	{
+		"hora": 16,
+		"transacciones_totales": 5,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 15,
+		"transacciones_totales": 6,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 12,
+		"transacciones_totales": 9,
+		"personal_necesario": 1.24844229221344
+	},
+	{
+		"hora": 14,
+		"transacciones_totales": 14,
+		"personal_necesario": 1.936602234840393
+	},
+	{
+		"hora": 17,
+		"transacciones_totales": 6,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 9,
+		"transacciones_totales": 9,
+		"personal_necesario": 1.240145206451416
+	},
+	{
+		"hora": 10,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.1070635318756104
+	},
+	{
+		"hora": 13,
+		"transacciones_totales": 9,
+		"personal_necesario": 1.250131607055664
+	},
+	{
+		"hora": 18,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.1109743118286133
+	},
+	{
+		"hora": 19,
+		"transacciones_totales": 3,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 7,
+		"transacciones_totales": 5,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 8,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.0969183444976807
+	},
+	{
+		"hora": 11,
+		"transacciones_totales": 8,
+		"personal_necesario": 1.1087528467178345
+	}
+]
+},
+"2025-02-07": {
+"dia_semana": 5,
+"datos": [
+	{
+		"hora": 10,
+		"transacciones_totales": 9,
+		"personal_necesario": 1.244293451309204
+	},
+	{
+		"hora": 17,
+		"transacciones_totales": 12,
+		"personal_necesario": 1.661112666130066
+	},
+	{
+		"hora": 16,
+		"transacciones_totales": 10,
+		"personal_necesario": 1.3885304927825928
+	},
+	{
+		"hora": 7,
+		"transacciones_totales": 4,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 9,
+		"transacciones_totales": 9,
+		"personal_necesario": 1.2399345636367798
+	},
+	{
+		"hora": 8,
+		"transacciones_totales": 6,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 18,
+		"transacciones_totales": 3,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 15,
+		"transacciones_totales": 14,
+		"personal_necesario": 1.9296345710754395
+	},
+	{
+		"hora": 14,
+		"transacciones_totales": 11,
+		"personal_necesario": 1.526820421218872
+	},
+	{
+		"hora": 11,
+		"transacciones_totales": 7,
+		"personal_necesario": 1
+	},
+	{
+		"hora": 12,
+		"transacciones_totales": 11,
+		"personal_necesario": 1.523672342300415
+	},
+	{
+		"hora": 13,
+		"transacciones_totales": 7,
+		"personal_necesario": 1
+	}
+]
+}}
