@@ -105,6 +105,8 @@ sucursales = ["001", "002", "121", "097"]
 H_1_5 = list(range(6, 22))  # Horario de 6 AM a 8 PM de lunes a viernes
 H_6 = list(range(7, 20))    # Horario de 7 AM a 8 PM para sábados
 H_7 = list(range(7, 20))   # Horario de 7 AM a 8 PM para domingos
+#table = generar_dotacion_empleados(sucursales, H_1_5, H_6, H_7)
+#print(table)
 
 def convertir_sets_a_listas(obj):
     """
@@ -321,17 +323,18 @@ def crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal):
                 x[(fecha, t, h)] = pulp.LpVariable(f"x_{sucursal}_{fecha}_{t}_{h}", lowBound=0, upBound=upper_bound, cat=pulp.LpInteger)
     return model, x, emp, subcov, overcov
  
-def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos, inicios_turno, fechas, sucursal, num_regentes):
+def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos,
+                          inicios_turno, fechas, sucursal, cost_sub, cost_over):
     
     #if num_regentes == 1:
         #cost_sub = 1.5
         #cost_over = 1
-    if num_regentes == 2:
-        cost_sub = 1.25
-        cost_over = 1
-    else:
-        cost_sub = 1.5
-        cost_over = 1
+    # if num_regentes == 2:
+    #     cost_sub = 1.25
+    #     cost_over = 1
+    # else:
+    #cost_sub = 1.5
+    #cost_over = 1
         
     model += (
         pulp.lpSum(
@@ -409,7 +412,6 @@ def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos
     #                    for h in solucion[sucursal][fecha]["Personal_necesario"].keys() 
     #                    if (fecha, "T6n", h) in x) <= 2
     #     ), f"Maximo_2_Turnos_T6n_{fecha}"
-
 
 def asignacion_regentes(Bloque_semana, solucion, num_regentes):
     """
@@ -537,10 +539,7 @@ def asignacion_regentes(Bloque_semana, solucion, num_regentes):
                     Bloque_semana[sucursal][fecha][h] -= 1  
                 solucion[sucursal][fecha]["Empleados_asignados"][h] += 1
 
-
-
-
-def solver_semana(Bloque_semana, Horarios, num_regentes):
+def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
     """
     Resuelve la optimización de turnos semanales incluyendo vendedores,
     agrupando empleados en cada turno asignado.
@@ -600,7 +599,9 @@ def solver_semana(Bloque_semana, Horarios, num_regentes):
     
     model, x, emp, subcov, overcov = crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal)
     # 🔹 Restricciones
-    agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos, inicios_turno, fechas, sucursal, num_regentes)
+    agregar_restricciones(model, x, emp, subcov, overcov, solucion, 
+                          tipos_turnos, inicios_turno, fechas, sucursal,
+                          cost_sub, cost_over)
     
     
     # 🔹 Resolver el modelo
@@ -631,8 +632,7 @@ def solver_semana(Bloque_semana, Horarios, num_regentes):
             
     return solucion
 
-
-def asignar_vendedores(solucion):
+def Generar_reporte(solucion):
     """
     Asigna empleados a los turnos de vendedores en la solución, asegurando que cada empleado:
     - Solo tenga 1 turno por día.
@@ -701,10 +701,6 @@ def asignar_vendedores(solucion):
 
     return Reporte
 
-
-
-
-
 Bloque_semana = {
     '001': {  # Código de la sucursal
         '03-02-2025 Lunes': {  # Fecha con el día de la semana
@@ -730,9 +726,6 @@ Bloque_semana = {
         }
     }
 }
-
-
-
 
 Bloque_semana_t1 = {
     '001': {  # Código de la sucursal
@@ -796,14 +789,7 @@ tipos_turnos = {
         }
     }
     
-# Bloque_semana1 = ajustar_horarios_bloque(Bloque_semana, Horarios)
-# It = Inicios_turnos(Bloque_semana1, tipos_turnos, fechas, sucursal)
-# #nb = ajustar_horarios_bloque(Bloque_semana, Horarios)
-# solucion = Generar_dict_sol(Bloque_semana1, fechas, sucursal, Horarios)
-# asignacion_regentes(Bloque_semana1, solucion, num_regentes=2)
-solution = solver_semana(Bloque_semana, Horarios, num_regentes=1)
-#solution1 = postprocesamiento_empleados(solution)
 
-Reporte = asignar_vendedores(solution)
-
+solution = solver_semana(Bloque_semana, Horarios, num_regentes=2,
+                        cost_sub = 1.5, cost_over = 1)
 imprimir_reporte_json(solution)
