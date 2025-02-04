@@ -161,7 +161,7 @@ def ajustar_horarios_bloque(Bloque_semana, Horarios):
         for fecha, demanda_horas in fechas.items():
             dia_semana = fecha.split()[1]  # Extraer "Lunes", "Martes", etc.
             h_apertura, h_cierre = Horarios[dia_semana]  # Obtener horario de la sucursal
-            h_cierre = h_cierre -1
+            h_cierre = h_cierre - 1  #el inicio de la ultima hora de cierre.
             # 🔹 Obtener la primera y última hora en Bloque_semana
             horas_existentes = sorted(demanda_horas.keys())
             h_min = min(horas_existentes)
@@ -173,11 +173,12 @@ def ajustar_horarios_bloque(Bloque_semana, Horarios):
             # 🔹 Ajuste de apertura
             if h_apertura - h_min == 0.5:
                 nueva_fecha.update({h_apertura: nueva_fecha[h_min]})  # Ajustar la primera hora
-                #del nueva_fecha[h_min]  # Eliminar la hora incorrecta
+                del nueva_fecha[h_min]  # Eliminar la hora incorrecta
             elif h_apertura - h_min == -0.5:
                 nueva_fecha.update({h_apertura: nueva_fecha[h_min]})  # Ajustar la primera hora
-                del nueva_fecha[h_min] 
+                #del nueva_fecha[h_min] 
             elif h_min > h_apertura:
+                #print(f"la hora minima de demanda es {h_min} comenzo despues de la hora de apertura : {h_apertura}")
                 # Agregar h_apertura como decimal si es necesario
                 nueva_fecha.update({h_apertura: nueva_fecha[h_min]})
                 #nueva_fecha.update({h_apertura: nueva_fecha[h_min]})
@@ -186,6 +187,7 @@ def ajustar_horarios_bloque(Bloque_semana, Horarios):
                     nueva_fecha.update({h: nueva_fecha[h_min]})
 
             elif h_min < h_apertura:
+                #print(f"la hora minima de demanda es {h_min} comenzo antes de la hora de apertura : {h_apertura}")
                 # Eliminar todas las horas previas y poner h_apertura como nueva primera hora
                 nueva_fecha = {h_apertura: nueva_fecha[h_min]}  # Se conserva la demanda original
 
@@ -196,13 +198,14 @@ def ajustar_horarios_bloque(Bloque_semana, Horarios):
             elif h_cierre - h_max == -0.5:
                 nueva_fecha.update({h_cierre: nueva_fecha[h_max]})  # Ajustar la última hora
                 del nueva_fecha[h_max]  # Eliminar la hora incorrecta
+            #caso en el que la hora de cierre es mayor que la ultima hora de demanda
             elif h_max < h_cierre:
                 # Agregar la hora de cierre como decimal si es necesario
                 nueva_fecha.update({h_cierre: nueva_fecha[h_max]})
                 # Agregar las horas enteras faltantes
                 for h in range(int(h_max) + 1, int(h_cierre)):
                     nueva_fecha.update({h: nueva_fecha[h_max]})
-
+            #caso en el que la ultima hora de demanda es mayor que la hora de cierra
             elif h_max > h_cierre:
                 # Eliminar todas las horas posteriores a h_cierre y poner h_cierre como nueva última hora
                 nueva_fecha.update({h_cierre: nueva_fecha[h_max]})  # Mantener la demanda original
@@ -220,25 +223,33 @@ def Inicios_turnos(Bloque_semana, tipos_turnos, fechas, sucursal):
     excluyendo T6n si la sucursal cierra antes de las 22:00.
     """
     inicios_turno = {}
-
+    #tol = 0.5 # Recoemndacion de Edwin, añadir 30 minutos de tolerancia para los turnos nocturnos y lograr que surtir demanda, si la sucursal cierra a las
     for fecha in fechas:
         # Obtener la última hora registrada en Bloque_semana (ya ajustada)
         hora_cierre_real = max(Bloque_semana[sucursal][fecha].keys()) 
         # Crear el diccionario de turnos para la fecha
         inicios_turno[fecha] = {}
-
+        #print(f"hora_cierre_real: {hora_cierre_real}")
         for t in tipos_turnos:
             # 🔹 Si el turno es "T6n" y la sucursal cierra antes de las 22, no lo agregamos            
-            if t == "T6n" and hora_cierre_real < 22:
+            if t == "T6n" and hora_cierre_real <= 21:
                 continue  # Saltar este turno
 
             # Calcular las horas de inicio para este tipo de turno
             inicios_turno[fecha][t] = [
                 h for h in Bloque_semana[sucursal][fecha].keys()
-                if h + tipos_turnos[t]["duracion"] - 1 <= hora_cierre_real
-                and h >= tipos_turnos[t]['rango_horas'][0]
+                if h + tipos_turnos[t]["duracion"] - 1 <= hora_cierre_real 
+                and tipos_turnos[t]['rango_horas'][0] <= h
                 and h + tipos_turnos[t]["duracion"] - 1 <= tipos_turnos[t]['rango_horas'][1]
+                # or (t == 'T6n' and h + tipos_turnos[t]["duracion"] - 1 <= hora_cierre_real + tol
+                # and tipos_turnos[t]['rango_horas'][0] <= h
+                # and h + tipos_turnos[t]["duracion"] - 1 <= tipos_turnos[t]['rango_horas'][1] + tol)
             ]
+            if tipos_turnos[t]['rango_horas'][1] >= hora_cierre_real and tipos_turnos[t]['rango_horas'][0] <= hora_cierre_real - tipos_turnos[t]["duracion"]:
+                inicios_turno[fecha][t].append(hora_cierre_real - tipos_turnos[t]["duracion"] + 1)
+                
+            inicios_turno[fecha][t] = list(set(inicios_turno[fecha][t]))
+            inicios_turno[fecha][t].sort()  
 
     return inicios_turno
 
@@ -278,6 +289,8 @@ def crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal):
     # 🔹 Variables de empleados totales por hora (Solo en horas válidas según la apertura real)
     for fecha in fechas:
         # 🔹 Iterar sobre las horas ya corregidas en "Personal_necesario"
+        #Horas = Bloque_semana[sucursal][fecha].keys()
+        #Horas.append(inicios_turno[fecha][t])
         for h in Bloque_semana[sucursal][fecha].keys():
             # 🔹 Definir las variables de empleados, subcobertura y sobrecobertura para cada hora
             emp[(fecha, h)] = pulp.LpVariable(f"emp_{sucursal}_{fecha}_{h}", lowBound=0, cat=pulp.LpInteger)
@@ -292,7 +305,7 @@ def crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal):
 
         for t in tipos_turnos:
             # 🔹 Si el tipo de turno es 'T6n', verificar si la hora de cierre es >= 22
-            if t == "T6n" and hora_cierre_real < 22 :
+            if t == "T6n" and hora_cierre_real < 21 :
                 continue  # Si la sucursal cierra antes de las 22, no se define este turno desde las variable
 
             for h in inicios_turno[fecha][t]:
@@ -300,17 +313,26 @@ def crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal):
                 max_necesidad = max(
                     Bloque_semana[sucursal][fecha].get(h + i, 0) 
                     for i in range(tipos_turnos[t]["duracion"]) 
-                    if (h + i) in Bloque_semana[sucursal][fecha]
+                    if (h + i) <= max(Bloque_semana[sucursal][fecha].keys())
                 )
                 upper_bound = max(10, max_necesidad + 5)
                 
                 # Definir la variable de decisión solo si pasa los filtros
                 x[(fecha, t, h)] = pulp.LpVariable(f"x_{sucursal}_{fecha}_{t}_{h}", lowBound=0, upBound=upper_bound, cat=pulp.LpInteger)
     return model, x, emp, subcov, overcov
+ 
+def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos, inicios_turno, fechas, sucursal, num_regentes):
     
-def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos, inicios_turno, fechas, sucursal):
-    cost_sub = 1.5
-    cost_over = 1
+    #if num_regentes == 1:
+        #cost_sub = 1.5
+        #cost_over = 1
+    if num_regentes == 2:
+        cost_sub = 1.25
+        cost_over = 1
+    else:
+        cost_sub = 1.5
+        cost_over = 1
+        
     model += (
         pulp.lpSum(
             tipos_turnos[t]['costo'] * x[(fecha, t, h)]
@@ -344,7 +366,7 @@ def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos
                     for t in inicios_turno[fecha].keys()
                     for i in inicios_turno[fecha][t]
                     #for h_prime in solucion[sucursal][fecha]["Personal_necesario"].keys()
-                    if i <= h < i + tipos_turnos[t]["duracion"] 
+                    if i <= h <= i + tipos_turnos[t]["duracion"] -1
                 )
              ), f"Definicion_Empleados_{fecha}_{h}"
 
@@ -389,9 +411,6 @@ def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos
     #     ), f"Maximo_2_Turnos_T6n_{fecha}"
 
 
-#Se cambio los regentes
-
-
 def asignacion_regentes(Bloque_semana, solucion, num_regentes):
     """
     Asigna los turnos fijos de los regentes y actualiza Bloque_semana y solucion.
@@ -419,16 +438,14 @@ def asignacion_regentes(Bloque_semana, solucion, num_regentes):
         fecha: sum(Bloque_semana[sucursal][fecha].values()) / len(Bloque_semana[sucursal][fecha])
         for fecha in fechas
     }
-
     # 🔹 Ordenar las fechas de mayor a menor demanda promedio
     fechas_ordenadas = sorted(demanda_promedio, key=demanda_promedio.get, reverse=True)
 
-    # 🔹 Tomar los 6 días con mayor demanda
+    # 🔹 Seleccionar los 6 días con mayor demanda
     fechas_seleccionadas = fechas_ordenadas[:6]
 
     # 🔹 Asignación del primer regente
     for i, fecha in enumerate(fechas_seleccionadas):
-        #dia_semana = fecha.split()[1]  # Extraer "Lunes", "Martes", etc.
         h_apertura = min(Bloque_semana[sucursal][fecha].keys())  # Hora de apertura
         h_cierre = max(Bloque_semana[sucursal][fecha].keys())  # Hora de cierre
 
@@ -447,33 +464,44 @@ def asignacion_regentes(Bloque_semana, solucion, num_regentes):
             solucion[sucursal][fecha][tipo_turno] = []  # Crear la lista si no existe
 
         solucion[sucursal][fecha][tipo_turno].append({
-            "Comienza": h_inicio,
-            "Ultima_hora_servicio": h_inicio + duracion - 1,
+            "Hora_entrada": h_inicio,
+            "Hora_salida": h_inicio + duracion,
             "empleados": 1,
-            "empleado": "Regente"
+            "empleado": "Regente_1"
         })
 
-        # 🔹 Actualizar Bloque_semana (restar demanda en horas del turno)
-        for h in range(h_inicio, h_inicio + duracion):
+        # 🔹 Si es un turno de 4 horas, mover "T4" al inicio del diccionario
+        if tipo_turno == "T4":
+            solucion[sucursal][fecha] = dict(
+                [("T4", solucion[sucursal][fecha]["T4"])] +
+                [(k, v) for k, v in solucion[sucursal][fecha].items() if k != "T4"]
+            )
+
+        # 🔹 Restar demanda en horas del turno
+        for h in [h for h in Bloque_semana[sucursal][fecha].keys() if h_inicio <= h <= h_inicio + duracion]:
             if Bloque_semana[sucursal][fecha][h] >= 1:
                 Bloque_semana[sucursal][fecha][h] -= 1  
-
-            # 🔹 Actualizar empleados asignados en la solución
-            solucion[sucursal][fecha]["Empleados_asignados"][h] += 1  
+            solucion[sucursal][fecha]["Empleados_asignados"][h] += 1
 
     # 🔹 Si hay un segundo regente, asignarlo
     if num_regentes == 2:
-        for i, fecha in enumerate(fechas_seleccionadas):
-            #dia_semana = fecha.split()[1]
+        # 🔹 Seleccionar los 6 días con mayor demanda para el segundo regente
+        fechas_seleccionadas_2 = fechas_ordenadas[:6]
+
+        # 🔹 Si los 6 días seleccionados son los mismos que el primer regente, reemplazar el último día
+        if set(fechas_seleccionadas) == set(fechas_seleccionadas_2):
+            fecha_sin_regente = next((fecha for fecha in fechas if fecha not in fechas_seleccionadas), None)
+            if fecha_sin_regente:
+                fechas_seleccionadas_2[-1] = fecha_sin_regente  # Reemplazar el último día con el día sin regente
+
+        # 🔹 Asignación del segundo regente
+        for i, fecha in enumerate(fechas_seleccionadas_2):
             h_apertura = min(Bloque_semana[sucursal][fecha].keys())  # Hora de apertura
             h_cierre = max(Bloque_semana[sucursal][fecha].keys())  # Hora de cierre
 
-            # 🔹 Verificar si ya hay un regente asignado en ese día
-            regente_asignado = any(turno["empleado"] == "Regente" for turno in solucion[sucursal][fecha]["T8d"])
-
-            # 🔹 Si ya hay un regente, el segundo entra a la hora de cierre - 7
-            if regente_asignado:
-                h_inicio = min(h_cierre - 7, 14)  # No puede entrar después de las 14
+            # 🔹 Si el primer regente ya está asignado en esta fecha, el segundo entra a h_cierre - 7
+            if any(turno["empleado"] == "Regente_1" for turno in solucion[sucursal][fecha].get("T8d", [])):
+                h_inicio = h_cierre - 7
             else:
                 h_inicio = h_apertura
 
@@ -490,19 +518,27 @@ def asignacion_regentes(Bloque_semana, solucion, num_regentes):
                 solucion[sucursal][fecha][tipo_turno] = []
 
             solucion[sucursal][fecha][tipo_turno].append({
-                "Comienza": h_inicio,
-                "Ultima_hora_servicio": h_inicio + duracion - 1,
+                "Hora_entrada": h_inicio,
+                "Hora_salida": h_inicio + duracion,
                 "empleados": 1,
-                "empleado": "Regente"
+                "empleado": "Regente_2"
             })
 
-            # 🔹 Actualizar Bloque_semana (restar demanda en horas del turno)
-            for h in range(h_inicio, h_inicio + duracion):
+            # 🔹 Si es un turno de 4 horas, mover "T4" al inicio del diccionario
+            if tipo_turno == "T4":
+                solucion[sucursal][fecha] = dict(
+                    [("T4", solucion[sucursal][fecha]["T4"])] +
+                    [(k, v) for k, v in solucion[sucursal][fecha].items() if k != "T4"]
+                )
+
+            # 🔹 Restar demanda en horas del turno
+            for h in [h for h in Bloque_semana[sucursal][fecha].keys() if h_inicio <= h <= h_inicio + duracion]:
                 if Bloque_semana[sucursal][fecha][h] >= 1:
                     Bloque_semana[sucursal][fecha][h] -= 1  
+                solucion[sucursal][fecha]["Empleados_asignados"][h] += 1
 
-                # 🔹 Actualizar empleados asignados en la solución
-                solucion[sucursal][fecha]["Empleados_asignados"][h] += 1  
+
+
 
 def solver_semana(Bloque_semana, Horarios, num_regentes):
     """
@@ -537,17 +573,17 @@ def solver_semana(Bloque_semana, Horarios, num_regentes):
         "T7m": {  
             'costo': 1, 
             "duracion": 7,
-            "rango_horas": (10,21),  # 14.0 a 22.5
+            "rango_horas": (10, 21.5),  # 14.0 a 22.5
         },
         "T8d": {  
             'costo': 1,
             "duracion": 8,
-            "rango_horas": (5,18),  # 5.0 a 18.0
+            "rango_horas": (5, 18),  # 5.0 a 18.0
         }, 
         "T6n": {  
             'costo': 1,
             "duracion": 6,
-            "rango_horas": (17,23),  # 17.0 a 23.0
+            "rango_horas": (17, 23),  # 17.0 a 23.0
         }
     }
     #print(f'tips_turnos: {tipos_turnos}')
@@ -555,16 +591,16 @@ def solver_semana(Bloque_semana, Horarios, num_regentes):
     solucion = Generar_dict_sol(Bloque_semana, fechas, sucursal, Horarios) 
      # 🔹 Calcular los inicios de turnos para cada día de la seman
     inicios_turno = Inicios_turnos(Bloque_semana, tipos_turnos, fechas, sucursal)
+    #imprimir_reporte_json(inicios_turno)
     #Limitar la suma
     if num_regentes > 0:
-        imprimir_reporte_json(Bloque_semana)
+        #imprimir_reporte_json(Bloque_semana)
         asignacion_regentes(Bloque_semana, solucion, num_regentes)
-        imprimir_reporte_json(Bloque_semana)
+        #imprimir_reporte_json(Bloque_semana)
     
     model, x, emp, subcov, overcov = crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal)
-    
     # 🔹 Restricciones
-    agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos, inicios_turno, fechas, sucursal)
+    agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos, inicios_turno, fechas, sucursal, num_regentes)
     
     
     # 🔹 Resolver el modelo
@@ -583,8 +619,8 @@ def solver_semana(Bloque_semana, Horarios, num_regentes):
 
         if valor is not None and int(valor) > 0:  # Verificar que no sea None antes de convertirlo a int
             solucion[sucursal][fecha][t].append({
-                "Comienza": h,
-                "Ultima_hora_servicio": h + tipos_turnos[t]["duracion"] - 1,
+                "Hora_entrada": h,
+                "Hora_salida": h + tipos_turnos[t]["duracion"] ,
                 "empleados": int(valor),
                 "empleado": "Vendedores"
             })
@@ -724,11 +760,13 @@ Bloque_semana_t1 = {
     }
 }
 
+
+#Entra hora de apertura y hora de cierre reales
 Horarios = {
     "Lunes": (5.5, 22.5),
     "Martes": (6, 21),
-    "Miércoles": (5.5, 20),
-    "Jueves": (7.5, 20),
+    "Miércoles": (5.5, 20.5),
+    "Jueves": (7.5, 20.5),
     "Viernes": (6, 20),
     "Sábado": (5.5, 20),
     "Domingo": (6.5, 20)
@@ -744,12 +782,12 @@ tipos_turnos = {
         "T7m": {  
             'costo': 1, 
             "duracion": 7,
-            "rango_horas": (10,21),  # 14.0 a 22.5
+            "rango_horas": (10, 21.5),  # 14.0 a 22.5
         },
         "T8d": {  
             'costo': 1,
             "duracion": 8,
-            "rango_horas": (5,18),  # 5.0 a 18.0
+            "rango_horas": (5, 18),  # 5.0 a 18.0
         }, 
         "T6n": {  
             'costo': 1,
@@ -758,13 +796,14 @@ tipos_turnos = {
         }
     }
     
-
-It = Inicios_turnos(Bloque_semana, tipos_turnos, fechas, sucursal)
-
-
+# Bloque_semana1 = ajustar_horarios_bloque(Bloque_semana, Horarios)
+# It = Inicios_turnos(Bloque_semana1, tipos_turnos, fechas, sucursal)
+# #nb = ajustar_horarios_bloque(Bloque_semana, Horarios)
+# solucion = Generar_dict_sol(Bloque_semana1, fechas, sucursal, Horarios)
+# asignacion_regentes(Bloque_semana1, solucion, num_regentes=2)
 solution = solver_semana(Bloque_semana, Horarios, num_regentes=1)
 #solution1 = postprocesamiento_empleados(solution)
 
-#Reporte = asignar_vendedores(solution)
+Reporte = asignar_vendedores(solution)
 
-#imprimir_reporte_json(Reporte)
+imprimir_reporte_json(solution)
