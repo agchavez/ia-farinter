@@ -323,96 +323,6 @@ def crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal):
                 x[(fecha, t, h)] = pulp.LpVariable(f"x_{sucursal}_{fecha}_{t}_{h}", lowBound=0, upBound=upper_bound, cat=pulp.LpInteger)
     return model, x, emp, subcov, overcov
  
-def agregar_restricciones(model, x, emp, subcov, overcov, solucion, tipos_turnos,
-                          inicios_turno, fechas, sucursal, cost_sub, cost_over):
-    
-    #if num_regentes == 1:
-        #cost_sub = 1.5
-        #cost_over = 1
-    # if num_regentes == 2:
-    #     cost_sub = 1.25
-    #     cost_over = 1
-    # else:
-    #cost_sub = 1.5
-    #cost_over = 1
-        
-    model += (
-        pulp.lpSum(
-            tipos_turnos[t]['costo'] * x[(fecha, t, h)]
-            for fecha in fechas
-            for t in inicios_turno[fecha].keys()
-            for h in inicios_turno[fecha][t]
-            if (fecha, t, h) in x
-        ) +
-        pulp.lpSum(
-            cost_sub * subcov[fecha, h] + cost_over * overcov[fecha, h]
-            for fecha in fechas 
-            for h in solucion[sucursal][fecha]["Personal_necesario"].keys()
-        )
-    ), "FuncionObjetivo"
-
-    # 🔹 Restricción de balance general
-    for fecha in fechas:
-        for h in solucion[sucursal][fecha]["Personal_necesario"].keys():
-            if (fecha, h) in emp:  # 🔹 Solo aplicar la restricción si emp[(fecha, h)] existe
-                model += (
-                    emp[(fecha, h)] + subcov[(fecha, h)] - overcov[(fecha, h)] == solucion[sucursal][fecha]["Personal_necesario"][h]
-                ), f"Balance_Hora_{fecha}_{h}"
-
-            
-# 🔹 Restricción de empleados presentes en cada hora
-    for fecha in fechas:
-        for h in solucion[sucursal][fecha]["Personal_necesario"].keys():
-            model += (
-                emp[(fecha, h)] == pulp.lpSum(
-                    x[fecha, t, i]
-                    for t in inicios_turno[fecha].keys()
-                    for i in inicios_turno[fecha][t]
-                    #for h_prime in solucion[sucursal][fecha]["Personal_necesario"].keys()
-                    if i <= h <= i + tipos_turnos[t]["duracion"] -1
-                )
-             ), f"Definicion_Empleados_{fecha}_{h}"
-
-    # 🔹 Restricción de al menos 1 empleado por hora solo si la demanda es >= 1
-    for fecha in fechas:
-        for h in solucion[sucursal][fecha]["Personal_necesario"].keys():
-            if (fecha, h) in emp and solucion[sucursal][fecha]["Personal_necesario"][h] >= 1:
-                model += (
-                    emp[(fecha, h)] >= 1
-                ), f"Minimo_1_Empleado_en_horas_con_demanda_{fecha}_{h}"
-
-
-    # 🔹 Restricción de al menos un turno de tipo T8d (diurno) y T7m (mixto) por día
-    #añadir verificacion de que la diferencia entre el inicio y el cierre sea mas de 8 horas
-    # 🔹 Diccionario para registrar qué fechas ya tienen restricciones asignadas
-    #restricciones_aplicadas = set()
-
-    for fecha in fechas:
-        #horas_operacion = max(Bloque_semana[sucursal][fecha].keys()) - min(Bloque_semana[sucursal][fecha].keys())
-
-        # Si hay 8 horas o más y no se ha agregado una restricción en esta fecha
-        if inicios_turno[fecha]["T8d"]: #and fecha not in restricciones_aplicadas:
-            model += (
-                pulp.lpSum(x[fecha, "T8d", h] for h in inicios_turno[fecha]["T8d"]) >= 1
-            ), f"Minimo_1_Turno_T8d_{fecha}"
-            #restricciones_aplicadas.add(fecha)  # Registrar que ya se agregó una restricción para esta fecha
-
-        # Si hay entre 7 y 8 horas y no se ha agregado una restricción en esta fecha
-        # if inicios_turno[fecha]["T7m"] and fecha not in restricciones_aplicadas:
-        #     model += (
-        #         pulp.lpSum(x[fecha, "T7m", h] for h in inicios_turno[fecha]["T7m"]) >= 1
-        #     ), f"Minimo_1_Turno_T7m_{fecha}"
-        #     restricciones_aplicadas.add(fecha)  # Registrar que ya se agregó una restricción para esta fecha
-
-                
-        # # 🔹 Restricción de máximo 2 turnos nocturnos (T6n) por día
-    # for fecha in fechas:
-    #     model += (
-    #         pulp.lpSum(x[fecha, "T6n", h] 
-    #                    for h in solucion[sucursal][fecha]["Personal_necesario"].keys() 
-    #                    if (fecha, "T6n", h) in x) <= 2
-    #     ), f"Maximo_2_Turnos_T6n_{fecha}"
-
 def asignacion_regentes(Bloque_semana, solucion, num_regentes):
     """
     Asigna los turnos fijos de los regentes y actualiza Bloque_semana y solucion.
@@ -538,6 +448,102 @@ def asignacion_regentes(Bloque_semana, solucion, num_regentes):
                 if Bloque_semana[sucursal][fecha][h] >= 1:
                     Bloque_semana[sucursal][fecha][h] -= 1  
                 solucion[sucursal][fecha]["Empleados_asignados"][h] += 1
+    return Bloque_semana, solucion
+  
+def agregar_restricciones(Bloque_semana, model, x, emp, subcov, overcov, solucion, 
+                          tipos_turnos, inicios_turno, fechas, sucursal, cost_sub, cost_over):
+    
+    #if num_regentes == 1:
+        #cost_sub = 1.5
+        #cost_over = 1
+    # if num_regentes == 2:
+    #     cost_sub = 1.25
+    #     cost_over = 1
+    # else:
+    #cost_sub = 1.5
+    #cost_over = 1
+    #imprimir_reporte_json(Bloque_semana)
+    model += (
+        pulp.lpSum(
+            tipos_turnos[t]['costo'] * x[(fecha, t, h)]
+            for fecha in fechas
+            for t in inicios_turno[fecha].keys()
+            for h in inicios_turno[fecha][t]
+            if (fecha, t, h) in x
+        ) +
+        pulp.lpSum(
+            cost_sub * subcov[fecha, h] + cost_over * overcov[fecha, h]
+            for fecha in fechas 
+            for h in solucion[sucursal][fecha]["Personal_necesario"].keys()
+        )
+    ), "FuncionObjetivo"
+
+    # 🔹 Restricción de balance general
+    for fecha in fechas:
+        horas = list(solucion[sucursal][fecha]['Personal_necesario'].keys())
+        horas.sort()
+        for h in horas:
+            if (fecha, h) in emp:  # 🔹 Solo aplicar la restricción si emp[(fecha, h)] existe
+                model += (
+                    emp[(fecha, h)] + subcov[(fecha, h)] - overcov[(fecha, h)] == Bloque_semana[sucursal][fecha][h]
+                ), f"Balance_Hora_{fecha}_{h}"
+
+            
+# 🔹 Restricción de empleados presentes en cada hora
+    for fecha in fechas:
+        for h in solucion[sucursal][fecha]["Personal_necesario"].keys():
+            model += (
+                emp[(fecha, h)] == pulp.lpSum(
+                    x[fecha, t, i]
+                    for t in inicios_turno[fecha].keys()
+                    for i in inicios_turno[fecha][t]
+                    #for h_prime in solucion[sucursal][fecha]["Personal_necesario"].keys()
+                    if i <= h <= i + tipos_turnos[t]["duracion"] -1
+                )
+             ), f"Definicion_Empleados_{fecha}_{h}"
+
+     # 🔹 Restricción de al menos 1 empleado por hora solo si la demanda es >= 1
+    for fecha in fechas:
+         for h in solucion[sucursal][fecha]["Personal_necesario"].keys():
+             if (fecha, h) in emp and Bloque_semana[sucursal][fecha][h] >= 1:
+                 model += (
+                     emp[(fecha, h)] >= 1
+                 ), f"Minimo_1_Empleado_en_horas_con_demanda_{fecha}_{h}"
+
+
+    # 🔹 Restricción de al menos un turno de tipo T8d (diurno) y T7m (mixto) por día
+    #añadir verificacion de que la diferencia entre el inicio y el cierre sea mas de 8 horas
+    # 🔹 Diccionario para registrar qué fechas ya tienen restricciones asignadas
+    #restricciones_aplicadas = set()
+
+    for fecha in fechas:
+    #      # Si hay 8 horas o más y no se ha agregado una restricción en esta fecha
+    #      # Replace the existing T8d constraint with this:
+          if inicios_turno[fecha]["T8d"]:
+    #          # Check if there are no T8d shifts already assigned in the solution for this date
+              if not any(turno for turno in solucion[sucursal][fecha].get("T8d", [])):
+                  model += (
+                      pulp.lpSum(x[fecha, "T8d", h] for h in inicios_turno[fecha]["T8d"]) >= 1
+                  ), f"Minimo_1_Turno_T8d_{fecha}"
+
+            #restricciones_aplicadas.add(fecha)  # Registrar que ya se agregó una restricción para esta fecha
+
+        # Si hay entre 7 y 8 horas y no se ha agregado una restricción en esta fecha
+        # if inicios_turno[fecha]["T7m"] and fecha not in restricciones_aplicadas:
+        #     model += (
+        #         pulp.lpSum(x[fecha, "T7m", h] for h in inicios_turno[fecha]["T7m"]) >= 1
+        #     ), f"Minimo_1_Turno_T7m_{fecha}"
+        #     restricciones_aplicadas.add(fecha)  # Registrar que ya se agregó una restricción para esta fecha
+
+                
+        # # 🔹 Restricción de máximo 2 turnos nocturnos (T6n) por día
+    # for fecha in fechas:
+    #     model += (
+    #         pulp.lpSum(x[fecha, "T6n", h] 
+    #                    for h in solucion[sucursal][fecha]["Personal_necesario"].keys() 
+    #                    if (fecha, "T6n", h) in x) <= 2
+    #     ), f"Maximo_2_Turnos_T6n_{fecha}"
+
 
 def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
     """
@@ -592,14 +598,15 @@ def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
     inicios_turno = Inicios_turnos(Bloque_semana, tipos_turnos, fechas, sucursal)
     #imprimir_reporte_json(inicios_turno)
     #Limitar la suma
+    #imprimir_reporte_json(Bloque_semana)
     if num_regentes > 0:
         #imprimir_reporte_json(Bloque_semana)
-        asignacion_regentes(Bloque_semana, solucion, num_regentes)
+        Bloque_semana, solucion = asignacion_regentes(Bloque_semana, solucion, num_regentes)
         #imprimir_reporte_json(Bloque_semana)
-    
+    #imprimir_reporte_json(Bloque_semana)
     model, x, emp, subcov, overcov = crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal)
     # 🔹 Restricciones
-    agregar_restricciones(model, x, emp, subcov, overcov, solucion, 
+    agregar_restricciones(Bloque_semana, model, x, emp, subcov, overcov, solucion, 
                           tipos_turnos, inicios_turno, fechas, sucursal,
                           cost_sub, cost_over)
     
@@ -722,7 +729,7 @@ Bloque_semana = {
             5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 2, 11: 2, 12: 2, 13: 1, 14: 1, 15: 1, 16: 1, 17: 2, 18: 2, 19: 1, 20: 1
         },
         '09-02-2025 Domingo': {
-            6: 1, 7: 2, 8: 3, 9: 3, 10: 3, 11: 2, 12: 2, 13: 2, 14: 1, 15: 1, 16: 1, 17: 1, 18: 2, 19: 2, 20: 1
+            6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 2, 15: 1, 16: 1, 17: 1, 18: 1, 19: 2, 20: 1
         }
     }
 }
@@ -730,24 +737,24 @@ Bloque_semana = {
 Bloque_semana_t1 = {
     '001': {  # Código de la sucursal
         '03-02-2025 Lunes': {  # Fecha con el día de la semana
-            5: 2, 6: 3, 7: 10, 8: 9, 9: 9, 10: 10, 11: 8, 12: 7, 13: 7, 14: 7, 15: 6, 16: 5, 17: 4, 18: 3, 19: 0, 20: 0, 21: 0, 22: 0
+            5: 2, 6: 3, 7: 10, 8: 9, 9: 9, 10: 10, 11: 8, 12: 7, 13: 7, 14: 7, 15: 6, 16: 5, 17: 4, 18: 3, 19: 2, 20: 2, 21: 1, 22: 1
         },
         '04-02-2025 Martes': {
-            6: 1, 7: 2, 8: 3, 9: 3, 10: 3, 11: 2, 12: 2, 13: 2, 14: 1, 15: 1, 16: 1, 17: 1, 18: 2, 19: 2, 20: 1, 21: 1
+            6: 1, 7: 2, 8: 3, 9: 3, 10: 3, 11: 2, 12: 1, 13: 2, 14: 1, 15: 1, 16: 1, 17: 1, 18: 2, 19: 2, 20: 1, 21: 1
         },
         '05-02-2025 Miércoles': {
-            5: 1, 6: 2, 7: 3, 8: 3, 9: 3, 10: 2, 11: 2, 12: 2, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 2, 19: 2, 20: 1
+            6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1
         },
         '06-02-2025 Jueves': {
-            7: 2, 8: 3, 9: 3, 10: 3, 11: 2, 12: 2, 13: 1, 14: 1, 15: 1, 16: 1, 17: 2, 18: 2, 19: 2, 20: 1
+            6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1
         },
         '07-02-2025 Viernes': {
-            6: 2, 7: 3, 8: 3, 9: 4, 10: 4, 11: 3, 12: 3, 13: 2, 14: 2, 15: 1, 16: 1, 17: 1, 18: 2, 19: 3, 20: 2
+           6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1
         },
         '08-02-2025 Sábado': {
-            5: 1, 6: 2, 7: 2, 8: 3, 9: 3, 10: 2, 11: 2, 12: 2, 13: 1, 14: 1, 15: 1, 16: 1, 17: 2, 18: 2, 19: 1, 20: 1
+            6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1
         },
-        '09-02-2025 Domingo': {
+         '09-02-2025 Domingo': {
             6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1
         }
     }
@@ -763,6 +770,15 @@ Horarios = {
     "Viernes": (6, 20),
     "Sábado": (5.5, 20),
     "Domingo": (6.5, 20)
+}
+Horarios1 = {
+    "Lunes": (5.5, 22.5),
+    "Martes": (6, 21.5),
+    "Miércoles": (6, 20.5),
+    "Jueves": (6, 20.5),
+    "Viernes": (6, 20),
+    "Sábado": (6, 20),
+    "Domingo": (6, 20)
 }
 
 sucursal = list(Bloque_semana.keys())[0]
@@ -790,6 +806,9 @@ tipos_turnos = {
     }
     
 
-solution = solver_semana(Bloque_semana, Horarios, num_regentes=2,
+solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes=2,
                         cost_sub = 1.5, cost_over = 1)
+
+
+Reporte = Generar_reporte(solution)
 imprimir_reporte_json(solution)
