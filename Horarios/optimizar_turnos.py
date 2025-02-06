@@ -448,7 +448,7 @@ def asignacion_regentes(Bloque_semana, solucion, num_regentes):
                 if Bloque_semana[sucursal][fecha][h] >= 1:
                     Bloque_semana[sucursal][fecha][h] -= 1  
                 solucion[sucursal][fecha]["Empleados_asignados"][h] += 1
-    return Bloque_semana, solucion
+    #return Bloque_semana, solucion
   
 def agregar_restricciones(Bloque_semana, model, x, emp, subcov, overcov, solucion, 
                           tipos_turnos, inicios_turno, fechas, sucursal, cost_sub, cost_over):
@@ -491,6 +491,8 @@ def agregar_restricciones(Bloque_semana, model, x, emp, subcov, overcov, solucio
             
 # 🔹 Restricción de empleados presentes en cada hora
     for fecha in fechas:
+        horas = list(solucion[sucursal][fecha]['Personal_necesario'].keys())
+        horas.sort()
         for h in solucion[sucursal][fecha]["Personal_necesario"].keys():
             model += (
                 emp[(fecha, h)] == pulp.lpSum(
@@ -504,11 +506,13 @@ def agregar_restricciones(Bloque_semana, model, x, emp, subcov, overcov, solucio
 
      # 🔹 Restricción de al menos 1 empleado por hora solo si la demanda es >= 1
     for fecha in fechas:
-         for h in solucion[sucursal][fecha]["Personal_necesario"].keys():
-             if (fecha, h) in emp and Bloque_semana[sucursal][fecha][h] >= 1:
-                 model += (
-                     emp[(fecha, h)] >= 1
-                 ), f"Minimo_1_Empleado_en_horas_con_demanda_{fecha}_{h}"
+        horas = list(solucion[sucursal][fecha]['Personal_necesario'].keys())
+        horas.sort()
+        for h in horas:
+            if (fecha, h) in emp and Bloque_semana[sucursal][fecha][h] >= 1:
+                model += (
+                    emp[(fecha, h)] >= 1
+                ), f"Minimo_1_Empleado_en_horas_con_demanda_{fecha}_{h}"
 
 
     # 🔹 Restricción de al menos un turno de tipo T8d (diurno) y T7m (mixto) por día
@@ -601,7 +605,7 @@ def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
     #imprimir_reporte_json(Bloque_semana)
     if num_regentes > 0:
         #imprimir_reporte_json(Bloque_semana)
-        Bloque_semana, solucion = asignacion_regentes(Bloque_semana, solucion, num_regentes)
+        asignacion_regentes(Bloque_semana, solucion, num_regentes)
         #imprimir_reporte_json(Bloque_semana)
     #imprimir_reporte_json(Bloque_semana)
     model, x, emp, subcov, overcov = crear_modelo(tipos_turnos, Bloque_semana, inicios_turno, fechas, sucursal)
