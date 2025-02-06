@@ -1,0 +1,124 @@
+{
+    "empleado_1": {
+        "Rol": "Vendedor",
+        "Horarios": [
+            {
+                "Dia": "10-02-2025 Lunes",
+                "Turno": "T8d",
+                "Hora_entrada": 11,
+                "Hora_salida": 19,
+                "Id_turno": 1
+            },
+            {
+                "Dia": "11-02-2025 Martes",
+                "Turno": "T8d",
+                "Hora_entrada": 11,
+                "Hora_salida": 19,
+                "Id_turno": 2
+            },
+            {
+                "Dia": "12-02-2025 Miercoles",
+                "Turno": "T8d",
+                "Hora_entrada": 11,
+                "Hora_salida": 19,
+                "Id_turno": 3
+            },
+            {
+                "Dia": "13-02-2025 Jueves",
+                "Turno": "T8d",
+                "Hora_entrada": 11,
+                "Hora_salida": 19,
+                "Id_turno": 4
+            },
+            {
+                "Dia": "15-02-2025 Sabado",
+                "Turno": "T8d",
+                "Hora_entrada": 7,
+                "Hora_salida": 15,
+                "Id_turno": 9
+            },
+            {
+                "Dia": "16-02-2025 Domingo",
+                "Turno": "T7m",
+                "Hora_entrada": 14,
+                "Hora_salida": 21,
+                "Id_turno": 7
+            }
+            
+        ],
+        "Dia_libre": "14-02-2025 Viernes"
+    },
+    "empleado_3":{
+        "Rol": "Vendedor",
+        "Horarios":[
+            {
+                "Dia": "14-02-2025 Viernes",
+                "Turno": "T7m",
+                "Hora_entrada": 14,
+                "Hora_salida": 21,
+                "Id_turno": 5
+            },{
+                "Dia": "15-02-2025 Sabado",
+                "Turno": "T7m",
+                "Hora_entrada": 14,
+                "Hora_salida": 21,
+                "Id_turno": 7
+            },
+            {
+                "Dia": "12-02-2025 Miercoles",
+                "Turno": "T7m",
+                "Hora_entrada": 14,
+                "Hora_salida": 21,
+                "Id_turno": 3
+            }
+        ]
+    },
+    "empleado_2":{
+        "Rol": "Regente",
+        "Horarios": [
+            {
+                "Dia": "10-02-2025 Lunes",
+                "Turno": "T8d",
+                "Hora_entrada": 7,
+                "Hora_salida": 15,
+                "Id_turno": 1
+            },
+            {
+                "Dia": "11-02-2025 Martes",
+                "Turno": "T8d",
+                "Hora_entrada": 7,
+                "Hora_salida": 15,
+                "Id_turno": 2
+            },
+            {
+                "Dia": "12-02-2025 Miercoles",
+                "Turno": "T8d",
+                "Hora_entrada": 7,
+                "Hora_salida": 15,
+                "Id_turno": 3
+            },
+            {
+                "Dia": "13-02-2025 Jueves",
+                "Turno": "T8d",
+                "Hora_entrada": 7,
+                "Hora_salida": 15,
+                "Id_turno": 4
+            },
+            {
+                "Dia": "14-02-2025 Viernes",
+                "Turno": "T8d",
+                "Hora_entrada": 7,
+                "Hora_salida": 15,
+                "Id_turno": 4
+            },
+            {
+                "Dia": "16-02-2025 Domingo",
+                "Turno": "T8d",
+                "Hora_entrada": 7,
+                "Hora_salida": 15,
+                "Id_turno": 4
+            }
+        ],
+        "Dia_libre": "15-02-2025 Sabado"
+    }
+}
