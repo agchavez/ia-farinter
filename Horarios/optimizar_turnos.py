@@ -741,7 +741,7 @@ Bloque_semana = {
 Bloque_semana_t1 = {
     '001': {  # Código de la sucursal
         '03-02-2025 Lunes': {  # Fecha con el día de la semana
-            5: 2, 6: 3, 7: 10, 8: 9, 9: 9, 10: 10, 11: 8, 12: 7, 13: 7, 14: 7, 15: 6, 16: 5, 17: 4, 18: 3, 19: 2, 20: 2, 21: 1, 22: 1
+            5: 2, 6: 2, 7: 2, 8: 2, 9: 1, 10: 1, 11: 3, 12: 3, 13: 3, 14: 2, 15: 2, 16: 2, 17: 1, 18: 1, 19: 1, 20: 1, 21: 1
         },
         '04-02-2025 Martes': {
             6: 1, 7: 2, 8: 3, 9: 3, 10: 3, 11: 2, 12: 1, 13: 2, 14: 1, 15: 1, 16: 1, 17: 1, 18: 2, 19: 2, 20: 1, 21: 1
@@ -776,7 +776,7 @@ Horarios = {
     "Domingo": (6.5, 20)
 }
 Horarios1 = {
-    "Lunes": (5.5, 22.5),
+    "Lunes": (5.5, 21),
     "Martes": (6, 21.5),
     "Miércoles": (6, 20.5),
     "Jueves": (6, 20.5),
@@ -809,10 +809,226 @@ tipos_turnos = {
         }
     }
     
-
-solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes=2,
+num_regentes = 1
+solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes,
                         cost_sub = 1.5, cost_over = 1)
 
 
-Reporte = Generar_reporte(solution)
-imprimir_reporte_json(solution)
+
+def asignar_horarios_empleados(solucion, num_regentes):
+    """
+    Asigna los horarios semanales a los empleados minimizando el número de empleados necesarios.
+
+    - Primero, extrae y asigna turnos de regentes en 'control'.
+    - Luego, recorre los turnos de 'control' de mayor demanda a menor, asignándolos a empleados existentes o creando nuevos.
+    - Si un turno de Vendedores tiene 'empleados' > 1, se asigna uno a uno hasta agotar ese número.
+    - Cada empleado tiene 5 turnos pendientes al crearse; en cuanto se le asigna un turno, se reduce en 1.
+    - Un empleado no puede asignarse más de 1 turno por día ni más de 6 turnos en la semana.
+
+    Parámetros:
+    -----------
+    solucion : dict
+        Diccionario con la información de turnos generada por solver_semana (incluye 'Vendedores' y 'Regente_i').
+    num_regentes : int
+        Número de regentes a asignar (0 si no hay regentes).
+
+    Retorna:
+    --------
+    dict
+        Diccionario con la asignación de empleados y sus horarios.
+    """
+
+    # Diccionario final de empleados
+    empleados = {}
+    id_empleado = 1       # Contador de empleados
+    id_turno = 1          # Contador de ID de turnos
+
+    sucursal = list(solucion.keys())[0]
+    fechas = list(solucion[sucursal].keys())
+
+    # Copiamos la solución para ir removiendo/ajustando turnos
+    control = {}
+    # Copia profunda
+    from copy import deepcopy
+    control[sucursal] = deepcopy(solucion[sucursal])
+
+    # ----------------------------------------------------------------
+    # 1. Asignar turnos de los regentes primero (si existen)
+    # ----------------------------------------------------------------
+    if num_regentes > 2:
+        print("⚠ ADVERTENCIA: Solo se pueden asignar 2 regentes por sucursal. Se asignarán solo 2.")
+        num_regentes = 2
+
+    if num_regentes > 0:
+        for i in range(1, num_regentes + 1):
+            # Crear un empleado para este regente
+            empleado_id = f"empleado_{id_empleado}"
+            empleados[empleado_id] = {
+                "Rol": f"Regente_{i}",
+                "turnos_pendientes": 0,  # Los regentes ya tienen sus turnos fijos, no se calculan aquí
+                "Horarios": []
+            }
+
+            # Recorrer fechas y tipos de turno
+            for fecha in fechas:
+                for tipo_turno, lista_turnos in control[sucursal][fecha].items():
+                    # Solo T8d o T4 para regentes
+                    if tipo_turno in ("T8d", "T4"):
+                        # Buscar todos los turnos del regente i
+                        regent_shifts = [t for t in lista_turnos if t["empleado"] == f"Regente_{i}"]
+                        for shift in regent_shifts:
+                            # Asignar este turno al empleado
+                            empleados[empleado_id]["Horarios"].append({
+                                "Dia": fecha,
+                                "Turno": tipo_turno,
+                                "Hora_entrada": shift["Hora_entrada"],
+                                "Hora_salida": shift["Hora_salida"],
+                                "Id_turno": id_turno
+                            })
+                            id_turno += 1
+                        # Removerlos de 'control'
+                        control[sucursal][fecha][tipo_turno] = [
+                            x for x in lista_turnos if x["empleado"] != f"Regente_{i}"
+                        ]
+
+            id_empleado += 1
+
+    # ----------------------------------------------------------------
+    # 2. Ordenar las fechas por demanda promedio (mayor a menor)
+    # ----------------------------------------------------------------
+   # 🔹 Cambiar la forma de ordenar las fechas según la SUMA de turnos (empleados) en cada día
+    turnos_por_fecha = {}
+    for fecha in fechas:
+        total_turnos = 0
+        # Recorrer cada tipo de turno del día
+        for tipo_turno, lista_turnos in control[sucursal][fecha].items():
+            if isinstance(lista_turnos, list):  # Confirmar que sea una lista de turnos
+                for turno in lista_turnos:
+                    total_turnos += turno["empleados"]
+        turnos_por_fecha[fecha] = total_turnos
+
+    # 🔹 Ordenar de mayor a menor según la suma de 'empleados' (turnos) en ese día
+    fechas_ordenadas = sorted(turnos_por_fecha, key=turnos_por_fecha.get, reverse=True)
+
+
+    # ----------------------------------------------------------------
+    # 3. Asignar los turnos a vendedores (control ya está sin regentes)
+    # ----------------------------------------------------------------
+    for fecha in fechas_ordenadas:
+        # Recorremos T8d, T7m, T6n
+        for tipo_turno in ["T8d", "T7m", "T6n"]:
+            lista_turnos = control[sucursal][fecha].get(tipo_turno, [])
+            # Recorremos cada turno en la lista
+            for turno in lista_turnos:
+                if turno["empleado"] == "Vendedores":
+                    # Este turno puede tener 'empleados' > 1
+                    num_req = turno["empleados"]  # Cantidad de empleados requeridos
+                    hora_ent = turno["Hora_entrada"]
+                    hora_sal = turno["Hora_salida"]
+                    #count_emps = []
+                    for _ in range(num_req):
+                        asignado = False
+                        count_mismo_tipo_dict = {}
+                        count_emps = {}
+                        mejor_empleado = None
+
+                        for emp_id, datos in empleados.items():
+                            # Filtrar por rol='Vendedor'
+                            if not datos["Rol"].startswith("Vendedor"):
+                                continue
+                            if datos["turnos_pendientes"] <= 0:
+                                continue
+                            # Verificar que no tenga ya un turno este día
+                            dias_trabajados = {h["Dia"] for h in datos["Horarios"]}
+                            if fecha in dias_trabajados:
+                                continue
+
+                            # Para T6n, un empleado que ya tenga T8d/T7m no sirve
+                            tipos_existentes = {h["Turno"] for h in datos["Horarios"]}
+                            if tipo_turno == "T6n" and (("T8d" in tipos_existentes or "T7m" in tipos_existentes)):
+                                continue
+
+                            # Contar turnos del mismo tipo
+                            count_mismo_tipo = sum(1 for h in datos["Horarios"] if h["Turno"] == tipo_turno)
+                            if count_mismo_tipo > 0:
+                                count_mismo_tipo_dict[emp_id] = count_mismo_tipo
+                            
+                            # Contar total de turnos
+                            total_turnos = len(datos["Horarios"])
+                            count_emps[emp_id] = total_turnos
+                        
+                        #for e in count_emps:
+                        #    print(f'{e} tiene {count_emps[e]} turnos')
+                        
+                        # Asignar basado en count_mismo_tipo_dict
+                        if count_mismo_tipo_dict:
+                            # Obtener empleado con más turnos del mismo tipo
+                            mejor_empleado = max(count_mismo_tipo_dict.items(), key=lambda x: x[1])[0]
+                            datos = empleados[mejor_empleado]
+                            datos["Horarios"].append({
+                                "Dia": fecha,
+                                "Turno": tipo_turno,
+                                "Hora_entrada": hora_ent,
+                                "Hora_salida": hora_sal,
+                                "Id_turno": id_turno
+                            })
+                            datos["turnos_pendientes"] -= 1
+                            id_turno += 1
+                            asignado = True
+                            #print(f'Se asignó el turno {fecha, tipo_turno, hora_ent}:, {mejor_empleado}')
+                        
+                        elif count_emps:
+                            # Si no hay del mismo tipo, asignar al que tenga más turnos totales
+                            mejor_empleado = max(count_emps.items(), key=lambda x: x[1])[0]
+
+
+                        if not asignado and mejor_empleado is not None:
+                            # Asignar el turno al 'mejor_empleado' con menos turnos pendientes
+                            datos = empleados[mejor_empleado]
+                            datos["Horarios"].append({
+                                "Dia": fecha,
+                                "Turno": tipo_turno,
+                                "Hora_entrada": hora_ent,
+                                "Hora_salida": hora_sal,
+                                "Id_turno": id_turno
+                            })
+                            datos["turnos_pendientes"] -= 1
+                            id_turno += 1
+                            asignado = True
+
+                        # 2) Si no se asignó a nadie, crear un nuevo empleado
+                        if not asignado:
+                            new_emp_id = f"empleado_{id_empleado}"
+                            empleados[new_emp_id] = {
+                                "Rol": "Vendedor",
+                                "turnos_pendientes": 6,
+                                "Horarios": []
+                            }
+                            empleados[new_emp_id]["Horarios"].append({
+                                "Dia": fecha,
+                                "Turno": tipo_turno,
+                                "Hora_entrada": hora_ent,
+                                "Hora_salida": hora_sal,
+                                "Id_turno": id_turno
+                            })
+                            empleados[new_emp_id]["turnos_pendientes"] -= 1
+                            id_turno += 1
+                            id_empleado += 1
+
+    # ----------------------------------------------------------------
+    # 4. Asignar día libre a los empleados con 6 turnos
+    # ----------------------------------------------------------------
+    for emp_id, datos in empleados.items():
+        if len(datos["Horarios"]) == 6:
+            dias_ocupados = {h["Dia"] for h in datos["Horarios"]}
+            dia_libre = next((f for f in fechas if f not in dias_ocupados), None)
+            if dia_libre:
+                datos["Dia_libre"] = dia_libre
+
+    return empleados
+
+
+
+Reporte = asignar_horarios_empleados(solution, num_regentes)
+#imprimir_reporte_json(solution)
+imprimir_reporte_json(Reporte)
