@@ -3,6 +3,9 @@ import polars as pl
 import random
 import pulp
 import json
+import os
+from pathlib import Path
+from datetime import datetime, timedelta
 
 cfg = pl.Config(
     tbl_cols=-1,
@@ -548,7 +551,6 @@ def agregar_restricciones(Bloque_semana, model, x, emp, subcov, overcov, solucio
     #                    if (fecha, "T6n", h) in x) <= 2
     #     ), f"Maximo_2_Turnos_T6n_{fecha}"
 
-
 def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
     """
     Resuelve la optimización de turnos semanales incluyendo vendedores,
@@ -570,9 +572,11 @@ def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
         Diccionario con la misma estructura que `Bloque_semana`, pero con los turnos asignados,
         agrupando empleados en cada turno.
     """
+    sucursal = list(Bloque_semana.keys())[0]
+    #Horarios = Obtener_Horario(sucursal)
     Bloque_semana = ajustar_horarios_bloque(Bloque_semana, Horarios)
     # Extraer la única sucursal
-    sucursal = list(Bloque_semana.keys())[0]
+    
     fechas = list(Bloque_semana[sucursal].keys())
 
     # 🔹 Definir los tipos de turnos en intervalos de 0.5 horas
@@ -643,74 +647,136 @@ def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
             
     return solucion
 
-def Generar_reporte(solucion):
+def generar_horarios_sucursal(suc_id: str) -> pl.DataFrame:
     """
-    Asigna empleados a los turnos de vendedores en la solución, asegurando que cada empleado:
-    - Solo tenga 1 turno por día.
-    - Tenga inicialmente 5 turnos disponibles.
-    - Se creen nuevos empleados si es necesario.
-
-    Parámetros:
-    -----------
-    solucion : dict
-        Diccionario con la asignación de turnos por fecha y tipo de turno.
-
-    Retorna:
-    --------
-    dict
-        Diccionario `Reporte` con la lista de empleados asignados a cada tipo de turno.
+    Genera una tabla de horarios semanales para una sucursal.
+    
+    Args:
+        suc_id (str): Identificador de la sucursal
+        
+    Returns:
+        pl.DataFrame: Tabla con los horarios de la semana
     """
+    # Generar datos
+    registros = []
+    random.seed(42)  # Para reproducibilidad
+    
+    for dia_id in range(1, 8):
+        # Generar hora apertura (entre 5 y 10, puede ser .5)
+        h_apertura = random.choice([x/2 for x in range(10, 21)])  # Genera 5, 5.5, 6, 6.5...10
+        
+        # Generar duración (entre 10 y 14 horas, puede ser .5)
+        duracion = random.choice([x/2 for x in range(20, 29)])  # Genera 10, 10.5, 11...14
+        
+        h_cierre = h_apertura + duracion
+        
+        registros.append({
+            "Suc_Id": suc_id,
+            "Dia_Id": dia_id,
+            "H_apertura": h_apertura,
+            "H_cierre": h_cierre
+        })
+    
+    # Crear DataFrame
+    df = pl.DataFrame(registros)
+    
+    return df
 
-    # 🔹 Inicializar diccionario de Reporte con listas vacías por tipo de turno
-    Reporte = {"T8d": [], "T7m": [], "T6n": []}
+def is_file_fresh(file_path, max_age_hours=1):
+    path = Path(file_path)
+    if not path.exists():
+        return False
+        
+    file_time = datetime.fromtimestamp(path.stat().st_mtime)
+    current_time = datetime.now()
+    age = current_time - file_time
+    
+    return age < timedelta(hours=max_age_hours)
 
-    sucursal = list(solucion.keys())[0]  # Extraer la única sucursal
-    fechas = list(solucion[sucursal].keys())
+def cargar_tabla_horarios() -> pl.DataFrame:
+    """
+    Carga la tabla de horarios desde SQL.
+    """
+    query = """
+    SELECT 
+        Suc_Id,
+        Dia_Id,
+        H_apertura,
+        H_cierre
+    FROM DWH_Farinter.dbo.Dim_Horarios_Sucursales
+    WHERE Estado = 1
+    """
+    
+    # Conexión usando pyodbc
+    conn_str = (
+        "Driver={SQL Server};"
+        "Server=SRVDWH;"
+        "Database=DWH_Farinter;"
+        "Trusted_Connection=yes;"
+    )
+    
+    # Leer directamente a Polars DataFrame
+    df = pl.read_database(query=query, connection_uri=conn_str)
+    return df
 
-    # 🔹 Iterar sobre cada fecha
-    for fecha in fechas:
-        for tipo_turno in ["T8d", "T7m", "T6n"]:
-            if tipo_turno not in solucion[sucursal][fecha]:  # Si no hay turnos de este tipo, continuar
-                continue
+def verificar(CACHE_PATH) -> pl.DataFrame:
+    """
+    Verifica si existe el archivo parquet en cache y lo carga.
+    Si no existe, carga desde SQL y guarda en cache.
+    """
+    CACHE_PATH = Path(CACHE_PATH)
+    if is_file_fresh(CACHE_PATH, max_age_hours=1):
+        #print("Datos cargados desde cache")
+        df = pl.read_parquet(CACHE_PATH)
+    else:
+        #print("Cache no encontrado, cargando desde la base de datos")
+        df = cargar_tabla_horarios()
+        
+        # Crear directorio si no existe
+        os.makedirs("cache", exist_ok=True)
+        
+        # Guardar en cache
+        df.write_parquet(CACHE_PATH)
+        
+    return df
 
-            # 🔹 Obtener cuántos empleados hay en cada tipo de turno
-            empleados_disponibles = sum(asignacion["empleados"] for asignacion in solucion[sucursal][fecha][tipo_turno])
+def Obtener_Horario(Suc_Id: str) -> dict:
+    """
+    Obtiene el horario de una sucursal específica desde la tabla en cache.
+    
+    Args:
+        Suc_Id (str): Identificador de la sucursal
+        
+    Returns:
+        dict: Diccionario con los horarios de la semana
+    """
+    # Mapeo de Dia_Id a nombres
+    dias = {
+        1: "Lunes",
+        2: "Martes", 
+        3: "Miércoles",
+        4: "Jueves",
+        5: "Viernes",
+        6: "Sábado",
+        7: "Domingo"
+    }
+    
+    CACHE_PATH = "cache/horarios_sucursales.parquet"
+    # Obtener tabla desde cache
+    df = verificar(CACHE_PATH)
+    
+    # Filtrar por sucursal
+    df_sucursal = df.filter(pl.col("Suc_Id") == Suc_Id)
+    
+    # Convertir a diccionario
+    horarios = {}
+    for row in df_sucursal.iter_rows():
+        dia_nombre = dias[row[1]]
+        horarios[dia_nombre] = (row[2], row[3])
+    
+    return horarios
 
-            # 🔹 Obtener empleados existentes de este tipo de turno
-            empleados_tipo = Reporte[tipo_turno]  
 
-            # 🔹 Ordenar empleados existentes por índice, solo si la lista no está vacía
-            if empleados_tipo:
-                empleados_tipo.sort(key=lambda x: int(list(x.keys())[0].split("_")[1]))
-
-            empleados_asignados = 0  # Contador de empleados asignados en esta fecha
-
-            # 🔹 Asignar turnos a empleados existentes
-            for empleado_dict in empleados_tipo:
-                empleado_id = list(empleado_dict.keys())[0]  # Extraer el identificador (ejemplo: "empleado_1")
-                empleado = empleado_dict[empleado_id]  # Obtener el diccionario del empleado
-
-                if empleados_asignados >= empleados_disponibles:
-                    break  # Si ya cubrimos todos los turnos, terminamos
-
-                if empleado["turnos_pendientes"] > 0 and fecha not in empleado["dias"]:
-                    empleado["turnos_pendientes"] -= 1
-                    empleado["dias"].add(fecha)
-                    empleados_asignados += 1
-
-            # 🔹 Si faltan empleados, crear nuevos
-            while empleados_asignados < empleados_disponibles:
-                nuevo_empleado_id = f"empleado_{len(Reporte[tipo_turno]) + 1}"
-                nuevo_empleado = {
-                    nuevo_empleado_id: {
-                        "turnos_pendientes": 5,
-                        "dias": {fecha}
-                    }
-                }
-                Reporte[tipo_turno].append(nuevo_empleado)
-                empleados_asignados += 1
-
-    return Reporte
 
 Bloque_semana = {
     '001': {  # Código de la sucursal
@@ -1027,8 +1093,107 @@ def asignar_horarios_empleados(solucion, num_regentes):
 
     return empleados
 
+#horarios_sucursal = Obtener_Horario("1")
+#imprimir_reporte_json(horarios_sucursal)
 
 
 Reporte = asignar_horarios_empleados(solution, num_regentes)
 #imprimir_reporte_json(solution)
 imprimir_reporte_json(Reporte)
+
+
+
+
+Horarios = {
+    'K001' :  {
+    "Lunes": (7, 22),
+    "Martes": (7, 22),
+    "Miércoles": (7, 22),
+    "Jueves": (7, 22),
+    "Viernes": (7, 22),
+    "Sábado": (7, 22),
+    "Domingo": (7, 22)
+    },
+
+    'K002' :  {
+        "Lunes": (7, 22),
+        "Martes": (7, 22),
+        "Miércoles": (7, 22),
+        "Jueves": (7, 22),
+        "Viernes": (7, 22),
+        "Sábado": (7, 22),
+        "Domingo": (7, 22)
+    },
+
+    'K004' :  {
+        "Lunes": (7, 19),
+        "Martes": (7, 19),
+        "Miércoles": (7, 19),
+        "Jueves": (7, 19),
+        "Viernes": (7, 19),
+        "Sábado": (7, 19),
+        "Domingo": (7, 19)
+    },
+
+    'K005' :  {
+        "Lunes": (7, 19),
+        "Martes": (7, 19),
+        "Miércoles": (7, 19),
+        "Jueves": (7, 19),
+        "Viernes": (7, 19),
+        "Sábado": (7, 19),
+        "Domingo": (7, 19)
+    },
+
+    'K006' :  {
+        "Lunes": (8, 18),
+        "Martes":  (8, 18),
+        "Miércoles": (8, 18),
+        "Jueves":  (8, 18),
+        "Viernes": (8, 18),
+        "Sábado": (8, 18),
+        "Domingo":  (8, 18)
+    },
+
+    'K007' :  {
+        "Lunes": (7.5, 21),
+        "Martes":  (7.5, 21),
+        "Miércoles": (7.5, 21),
+        "Jueves":  (7.5, 21),
+        "Viernes": (7.5, 21),
+        "Sábado": (7.5, 21),
+        "Domingo":  (7.5, 21)
+    },
+    
+    'K008' :  {
+        "Lunes": (7.5, 21),
+        "Martes":  (7.5, 21),
+        "Miércoles": (7.5, 21),
+        "Jueves":  (7.5, 21),
+        "Viernes": (7.5, 21),
+        "Sábado": (7.5, 21),
+        "Domingo":  (7.5, 21)
+    },
+
+    'K009' :  {
+        "Lunes": (8, 18),
+        "Martes":  (8, 18),
+        "Miércoles": (8, 18),
+        "Jueves":  (8, 18),
+        "Viernes": (8, 18),
+        "Sábado": (8, 18),
+        "Domingo":  (9, 17)
+    },
+
+    'K010' :  {
+        "Lunes": (8,20),
+        "Martes":  (8, 20),
+        "Miércoles": (8, 20),
+        "Jueves":  (8, 20),
+        "Viernes": (8, 20),
+        "Sábado": (8, 21),
+        "Domingo":  (8, 21)
+    },
+}
+
+#imprimir_reporte_json(Horarios['K001'])
