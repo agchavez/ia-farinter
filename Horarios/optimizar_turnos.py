@@ -879,7 +879,377 @@ num_regentes = 1
 solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes,
                         cost_sub = 1.5, cost_over = 1)
 
-
+solucion_rastrear = {
+        '10' : {
+    "17-02-2025 Lunes":{
+        "T8d":[
+            {
+                "Hora_entrada":7,
+                "Hora_salida":15,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T7m":[
+            {
+                "Hora_entrada":14,
+                "Hora_salida":21,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T6n":[
+            
+        ],
+        "Personal_necesario":{
+            "7":1,
+            "8":1,
+            "9":1,
+            "10":1,
+            "11":1,
+            "12":1,
+            "13":1,
+            "14":1,
+            "15":1,
+            "16":1,
+            "17":1,
+            "18":1,
+            "19":1,
+            "20":1
+        },
+        "Empleados_asignados":{
+            "7":1.0,
+            "8":1.0,
+            "9":1.0,
+            "10":1.0,
+            "11":1.0,
+            "12":1.0,
+            "13":1.0,
+            "14":2.0,
+            "15":1.0,
+            "16":1.0,
+            "17":1.0,
+            "18":1.0,
+            "19":1.0,
+            "20":1.0
+        }
+    },
+    "18-02-2025 Martes":{
+        "T8d":[
+            {
+                "Hora_entrada":7,
+                "Hora_salida":15,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T7m":[
+            {
+                "Hora_entrada":14,
+                "Hora_salida":21,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T6n":[
+            
+        ],
+        "Personal_necesario":{
+            "7":1,
+            "8":1,
+            "9":1,
+            "10":1,
+            "11":1,
+            "12":1,
+            "13":1,
+            "14":1,
+            "15":1,
+            "16":1,
+            "17":1,
+            "18":2,
+            "19":1,
+            "20":1
+        },
+        "Empleados_asignados":{
+            "7":1.0,
+            "8":1.0,
+            "9":1.0,
+            "10":1.0,
+            "11":1.0,
+            "12":1.0,
+            "13":1.0,
+            "14":2.0,
+            "15":1.0,
+            "16":1.0,
+            "17":1.0,
+            "18":1.0,
+            "19":1.0,
+            "20":1.0
+        }
+    },
+    "19-02-2025 Miércoles":{
+        "T8d":[
+            {
+                "Hora_entrada":7,
+                "Hora_salida":15,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T7m":[
+            {
+                "Hora_entrada":14,
+                "Hora_salida":21,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T6n":[
+            
+        ],
+        "Personal_necesario":{
+            "7":1,
+            "8":1,
+            "10":1,
+            "11":1,
+            "13":2,
+            "14":1,
+            "15":1,
+            "16":1,
+            "17":2,
+            "18":3,
+            "19":1,
+            "20":1
+        },
+        "Empleados_asignados":{
+            "7":1.0,
+            "8":1.0,
+            "10":1.0,
+            "11":1.0,
+            "13":1.0,
+            "14":2.0,
+            "15":1.0,
+            "16":1.0,
+            "17":1.0,
+            "18":1.0,
+            "19":1.0,
+            "20":1.0
+        }
+    },
+    "20-02-2025 Jueves":{
+        "T8d":[
+            {
+                "Hora_entrada":7,
+                "Hora_salida":15,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T7m":[
+            {
+                "Hora_entrada":14,
+                "Hora_salida":21,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T6n":[
+            
+        ],
+        "Personal_necesario":{
+            "7":1,
+            "8":1,
+            "9":1,
+            "10":1,
+            "11":1,
+            "12":1,
+            "13":1,
+            "14":1,
+            "15":1,
+            "16":1,
+            "17":1,
+            "18":2,
+            "19":1,
+            "20":1
+        },
+        "Empleados_asignados":{
+            "7":1.0,
+            "8":1.0,
+            "9":1.0,
+            "10":1.0,
+            "11":1.0,
+            "12":1.0,
+            "13":1.0,
+            "14":2.0,
+            "15":1.0,
+            "16":1.0,
+            "17":1.0,
+            "18":1.0,
+            "19":1.0,
+            "20":1.0
+        }
+    },
+    "21-02-2025 Viernes":{
+        "T8d":[
+            {
+                "Hora_entrada":7,
+                "Hora_salida":15,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T7m":[
+            {
+                "Hora_entrada":14,
+                "Hora_salida":21,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T6n":[
+            
+        ],
+        "Personal_necesario":{
+            "7":1,
+            "8":1,
+            "9":1,
+            "10":1,
+            "11":1,
+            "12":1,
+            "13":1,
+            "14":1,
+            "15":1,
+            "16":1,
+            "17":1,
+            "18":1,
+            "19":1,
+            "20":1
+        },
+        "Empleados_asignados":{
+            "7":1.0,
+            "8":1.0,
+            "9":1.0,
+            "10":1.0,
+            "11":1.0,
+            "12":1.0,
+            "13":1.0,
+            "14":2.0,
+            "15":1.0,
+            "16":1.0,
+            "17":1.0,
+            "18":1.0,
+            "19":1.0,
+            "20":1.0
+        }
+    },
+    "22-02-2025 Sábado":{
+        "T8d":[
+            {
+                "Hora_entrada":7,
+                "Hora_salida":15,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T7m":[
+            {
+                "Hora_entrada":14,
+                "Hora_salida":21,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T6n":[
+            
+        ],
+        "Personal_necesario":{
+            "7":1,
+            "8":1,
+            "9":1,
+            "10":1,
+            "11":1,
+            "12":1,
+            "13":1,
+            "14":1,
+            "15":1,
+            "16":1,
+            "17":1,
+            "18":1,
+            "19":1,
+            "20":1
+        },
+        "Empleados_asignados":{
+            "7":1.0,
+            "8":1.0,
+            "9":1.0,
+            "10":1.0,
+            "11":1.0,
+            "12":1.0,
+            "13":1.0,
+            "14":2.0,
+            "15":1.0,
+            "16":1.0,
+            "17":1.0,
+            "18":1.0,
+            "19":1.0,
+            "20":1.0
+        }
+    },
+    "23-02-2025 Domingo":{
+        "T8d":[
+            {
+                "Hora_entrada":7,
+                "Hora_salida":15,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T7m":[
+            {
+                "Hora_entrada":14,
+                "Hora_salida":21,
+                "empleados":1,
+                "empleado":"Vendedores"
+            }
+        ],
+        "T6n":[
+            
+        ],
+        "Personal_necesario":{
+            "7":1,
+            "8":1,
+            "9":1,
+            "10":1,
+            "11":1,
+            "12":1,
+            "13":1,
+            "14":1,
+            "15":1,
+            "16":1,
+            "17":1,
+            "18":1,
+            "19":2,
+            "20":1
+        },
+        "Empleados_asignados":{
+            "7":1.0,
+            "8":1.0,
+            "9":1.0,
+            "10":1.0,
+            "11":1.0,
+            "12":1.0,
+            "13":1.0,
+            "14":2.0,
+            "15":1.0,
+            "16":1.0,
+            "17":1.0,
+            "18":1.0,
+            "19":1.0,
+            "20":1.0
+        }
+    }
+    }
+}
 
 def asignar_horarios_empleados(solucion, num_regentes):
     """
@@ -917,6 +1287,14 @@ def asignar_horarios_empleados(solucion, num_regentes):
     # Copia profunda
     from copy import deepcopy
     control[sucursal] = deepcopy(solucion[sucursal])
+    # Debug the structure
+    # for sucursal in control:
+    #     print(f"\nSucursal: {sucursal}")
+    #     for fecha in control[sucursal]:
+    #         print(f"\nFecha: {fecha}")
+    #         print(f"Tipo: {type(control[sucursal][fecha])}")
+    #         print("Contenido:")
+    #         print(json.dumps(control[sucursal][fecha], indent=2))
 
     # ----------------------------------------------------------------
     # 1. Asignar turnos de los regentes primero (si existen)
@@ -972,6 +1350,8 @@ def asignar_horarios_empleados(solucion, num_regentes):
                 for turno in lista_turnos:
                     total_turnos += turno["empleados"]
         turnos_por_fecha[fecha] = total_turnos
+        # Before accessing .items(), verify the type
+        
 
     # 🔹 Ordenar de mayor a menor según la suma de 'empleados' (turnos) en ese día
     fechas_ordenadas = sorted(turnos_por_fecha, key=turnos_por_fecha.get, reverse=True)
@@ -997,16 +1377,26 @@ def asignar_horarios_empleados(solucion, num_regentes):
                         count_mismo_tipo_dict = {}
                         count_emps = {}
                         mejor_empleado = None
+                        emps_red = {}
+                        emps_blue = []
 
                         for emp_id, datos in empleados.items():
                             # Filtrar por rol='Vendedor'
                             if not datos["Rol"].startswith("Vendedor"):
                                 continue
                             if datos["turnos_pendientes"] <= 0:
+                                if fecha not in datos['Horarios']:
+                                    dia = min(
+                                        (h["Dia"] for h in datos["Horarios"]),
+                                        key=lambda d: sum(control[sucursal][d]["Personal_necesario"].values())
+                                    )
+                                    emps_red[emp_id] = dia
                                 continue
                             # Verificar que no tenga ya un turno este día
                             dias_trabajados = {h["Dia"] for h in datos["Horarios"]}
                             if fecha in dias_trabajados:
+                                if datos['turnos_pendientes'] > 0:
+                                    emps_blue.append(emp_id)
                                 continue
 
                             # Para T6n, un empleado que ya tenga T8d/T7m no sirve
@@ -1023,8 +1413,15 @@ def asignar_horarios_empleados(solucion, num_regentes):
                             total_turnos = len(datos["Horarios"])
                             count_emps[emp_id] = total_turnos
                         
-                        #for e in count_emps:
-                        #    print(f'{e} tiene {count_emps[e]} turnos')
+                        #for e in emps_complete_turnos_sf:
+                        
+                        if emps_red:
+                            print('empleados rojos:')
+                            imprimir_reporte_json(emps_red)
+                        if len(emps_blue) > 0:
+                            for e in emps_blue:
+                                print(f'el empleado {e} es azul')
+                        #print(f'el empleado: {emps_complete_turnos_sf} tiene turnos completos sin esta fecha.')
                         
                         # Asignar basado en count_mismo_tipo_dict
                         if count_mismo_tipo_dict:
@@ -1064,22 +1461,63 @@ def asignar_horarios_empleados(solucion, num_regentes):
 
                         # 2) Si no se asignó a nadie, crear un nuevo empleado
                         if not asignado:
-                            new_emp_id = f"empleado_{id_empleado}"
-                            empleados[new_emp_id] = {
-                                "Rol": "Vendedor",
-                                "turnos_pendientes": 6,
-                                "Horarios": []
-                            }
-                            empleados[new_emp_id]["Horarios"].append({
-                                "Dia": fecha,
-                                "Turno": tipo_turno,
-                                "Hora_entrada": hora_ent,
-                                "Hora_salida": hora_sal,
-                                "Id_turno": id_turno
-                            })
-                            empleados[new_emp_id]["turnos_pendientes"] -= 1
-                            id_turno += 1
-                            id_empleado += 1
+                            if emps_red and emps_blue:
+                                # Find red employee with closest date to current fecha
+                                emp_red_cercano = min(
+                                    emps_red.items(),
+                                    key=lambda x: abs(fechas.index(x[1]) - fechas.index(fecha))
+                                )[0]
+                                
+                                # Get a blue employee (any will do since they have available shifts)
+                                emp_blue = next(iter(emps_blue))
+                                
+                                # Get the date to swap
+                                fecha_swap = emps_red[emp_red_cercano]
+                                
+                                # Remove old date from red employee
+                                empleados[emp_red_cercano]["Horarios"] = [
+                                    h for h in empleados[emp_red_cercano]["Horarios"] 
+                                    if h["Dia"] != fecha_swap
+                                ]
+                                
+                                # Add new date to red employee
+                                empleados[emp_red_cercano]["Horarios"].append({
+                                    "Dia": fecha,
+                                    "Turno": tipo_turno,
+                                    "Hora_entrada": hora_ent,
+                                    "Hora_salida": hora_sal,
+                                    "Id_turno": id_turno
+                                })
+                                
+                                # Add swapped date to blue employee
+                                empleados[emp_blue]["Horarios"].append({
+                                    "Dia": fecha_swap,
+                                    "Turno": tipo_turno,
+                                    "Hora_entrada": hora_ent,
+                                    "Hora_salida": hora_sal,
+                                    "Id_turno": id_turno + 1
+                                })
+                                empleados[emp_blue]["turnos_pendientes"] -= 1
+                                
+                                id_turno += 2
+                                asignado = True
+                            else:
+                                new_emp_id = f"empleado_{id_empleado}"
+                                empleados[new_emp_id] = {
+                                    "Rol": "Vendedor",
+                                    "turnos_pendientes": 6,
+                                    "Horarios": []
+                                }
+                                empleados[new_emp_id]["Horarios"].append({
+                                    "Dia": fecha,
+                                    "Turno": tipo_turno,
+                                    "Hora_entrada": hora_ent,
+                                    "Hora_salida": hora_sal,
+                                    "Id_turno": id_turno
+                                })
+                                empleados[new_emp_id]["turnos_pendientes"] -= 1
+                                id_turno += 1
+                                id_empleado += 1
 
     # ----------------------------------------------------------------
     # 4. Asignar día libre a los empleados con 6 turnos
