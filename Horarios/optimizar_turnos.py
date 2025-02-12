@@ -184,6 +184,7 @@ def ajustar_horarios_bloque(Bloque_semana, Horarios):
                 #print(f"la hora minima de demanda es {h_min} comenzo despues de la hora de apertura : {h_apertura}")
                 # Agregar h_apertura como decimal si es necesario
                 nueva_fecha.update({h_apertura: nueva_fecha[h_min]})
+                nueva_fecha = {h: nueva_fecha[h] for h in nueva_fecha if h >= h_apertura}
                 #nueva_fecha.update({h_apertura: nueva_fecha[h_min]})
                 # Agregar las horas enteras faltantes
                 for h in range(int(h_apertura), int(h_min)):
@@ -192,13 +193,14 @@ def ajustar_horarios_bloque(Bloque_semana, Horarios):
             elif h_min < h_apertura:
                 #print(f"la hora minima de demanda es {h_min} comenzo antes de la hora de apertura : {h_apertura}")
                 # Eliminar todas las horas previas y poner h_apertura como nueva primera hora
-                nueva_fecha = {h_apertura: nueva_fecha[h_min]}  # Se conserva la demanda original
+                nueva_fecha.update({h_apertura: nueva_fecha[h_min]})  # Se conserva la demanda original
 
             # 🔹 Ajuste de cierre
             if h_cierre - h_max == 0.5:
                 nueva_fecha.update({h_cierre: nueva_fecha[h_max]})  # Ajustar la última hora
                 #del nueva_fecha[h_max]  # Eliminar la hora incorrecta
             elif h_cierre - h_max == -0.5:
+                #print(f'fecha : {fecha}, la demanda es: {nueva_fecha}')
                 nueva_fecha.update({h_cierre: nueva_fecha[h_max]})  # Ajustar la última hora
                 del nueva_fecha[h_max]  # Eliminar la hora incorrecta
             #caso en el que la hora de cierre es mayor que la ultima hora de demanda
@@ -756,7 +758,7 @@ def asignar_horarios_empleados(solucion, num_regentes):
     # ----------------------------------------------------------------
     for fecha in fechas_ordenadas:
         # Recorremos T8d, T7m, T6n
-        for tipo_turno in ["T8d", "T7m", "T6n"]:
+        for tipo_turno in list(control[sucursal][fecha].keys):
             lista_turnos = control[sucursal][fecha].get(tipo_turno, [])
             # Recorremos cada turno en la lista
             for turno in lista_turnos:
@@ -1096,7 +1098,7 @@ num_regentes = 1
 
 solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes,
                         cost_sub = 1.5, cost_over = 1)
-
+imprimir_reporte_json(solution)
 solucion_rastrear = {
         '10' : {
     "17-02-2025 Lunes":{
@@ -1503,7 +1505,7 @@ def cargar_tabla_horarios() -> pl.DataFrame:
     """
 
     # 1. Leer con pandas usando la conexión definida en Django
-    df_pandas = pd.read_sql(query, connections["IA_FARINTER"])
+    df_pandas = pd.read_sql(query, connections["DL_FARINTER"])
 
     # 2. Convertir el DataFrame de pandas a Polars
     df_polars = pl.from_pandas(df_pandas)
@@ -1586,3 +1588,5 @@ def Obtener_Horario(Suc_Id: str) -> dict:
         h_apertura, h_cierre = redondear(h_apertura, h_cierre)
         horarios[dia_nombre] = (h_apertura, h_cierre)
     return horarios
+
+#Horario = Obtener_Horario(int(sucursal))
