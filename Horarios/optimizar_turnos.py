@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
 import polars as pl
-from django.db import connections
+#from django.db import connections
 import math
 
 cfg = pl.Config(
@@ -758,11 +758,12 @@ def asignar_horarios_empleados(solucion, num_regentes):
     # ----------------------------------------------------------------
     for fecha in fechas_ordenadas:
         # Recorremos T8d, T7m, T6n
-        for tipo_turno in list(control[sucursal][fecha].keys):
+        #print(list(control[sucursal][fecha].keys()))
+        for tipo_turno in ['T8d', 'T7m', 'T6n']:
             lista_turnos = control[sucursal][fecha].get(tipo_turno, [])
             # Recorremos cada turno en la lista
             for turno in lista_turnos:
-                if turno["empleado"] == "Vendedores":
+                if turno["empleado"] == "CAJERO":
                     # Este turno puede tener 'empleados' > 1
                     num_req = turno["empleados"]  # Cantidad de empleados requeridos
                     hora_ent = turno["Hora_entrada"]
@@ -829,7 +830,9 @@ def asignar_horarios_empleados(solucion, num_regentes):
                                 "Turno": tipo_turno,
                                 "Hora_entrada": hora_ent,
                                 "Hora_salida": hora_sal,
-                                "Id_turno": id_turno
+                                "Id_turno": id_turno, 
+                                'es_azul' : False,
+                                'es_rojo' : False
                             })
                             datos["turnos_pendientes"] -= 1
                             id_turno += 1
@@ -849,7 +852,9 @@ def asignar_horarios_empleados(solucion, num_regentes):
                                 "Turno": tipo_turno,
                                 "Hora_entrada": hora_ent,
                                 "Hora_salida": hora_sal,
-                                "Id_turno": id_turno
+                                "Id_turno": id_turno, 
+                                'es_azul' : False,
+                                'es_rojo' : False
                             })
                             datos["turnos_pendientes"] -= 1
                             id_turno += 1
@@ -882,7 +887,9 @@ def asignar_horarios_empleados(solucion, num_regentes):
                                     "Turno": tipo_turno,
                                     "Hora_entrada": hora_ent,
                                     "Hora_salida": hora_sal,
-                                    "Id_turno": id_turno
+                                    "Id_turno": id_turno, 
+                                    'es_azul' : False,
+                                    'es_rojo' : True
                                 })
                                 
                                 # Add swapped date to blue employee
@@ -891,7 +898,9 @@ def asignar_horarios_empleados(solucion, num_regentes):
                                     "Turno": tipo_turno,
                                     "Hora_entrada": hora_ent,
                                     "Hora_salida": hora_sal,
-                                    "Id_turno": id_turno + 1
+                                    "Id_turno": id_turno + 1, 
+                                    'es_azul' : True,
+                                    'es_rojo' : False
                                 })
                                 empleados[emp_blue]["turnos_pendientes"] -= 1
                                 
@@ -909,7 +918,9 @@ def asignar_horarios_empleados(solucion, num_regentes):
                                     "Turno": tipo_turno,
                                     "Hora_entrada": hora_ent,
                                     "Hora_salida": hora_sal,
-                                    "Id_turno": id_turno
+                                    "Id_turno": id_turno,
+                                    'es_azul' : False,
+                                    'es_rojo' : False
                                 })
                                 empleados[new_emp_id]["turnos_pendientes"] -= 1
                                 id_turno += 1
@@ -1094,11 +1105,9 @@ Horarios2 = {
 sucursal = list(Bloque_semana.keys())[0]
 fechas = list(Bloque_semana[sucursal].keys())
 
-num_regentes = 1
+num_regentes = 0
 
-solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes,
-                        cost_sub = 1.5, cost_over = 1)
-imprimir_reporte_json(solution)
+
 solucion_rastrear = {
         '10' : {
     "17-02-2025 Lunes":{
@@ -1470,7 +1479,11 @@ solucion_rastrear = {
     }
     }
 }
-
+#solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes,
+#                        cost_sub = 1.5, cost_over = 1)
+#imprimir_reporte_json(solution)
+#reporte = asignar_horarios_empleados(solucion_rastrear, num_regentes = 0)
+#imprimir_reporte_json(reporte)
 
 #__________________Funciones para cargar la tabla de horarios__________________
 
@@ -1590,3 +1603,452 @@ def Obtener_Horario(Suc_Id: str) -> dict:
     return horarios
 
 #Horario = Obtener_Horario(int(sucursal))
+
+Sol_ver = {
+    "1": {
+        "17-02-2025 Lunes": {
+            "T8d": [
+                {
+                    "Hora_entrada": 7,
+                    "Hora_salida": 15,
+                    "empleados": 3,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 8,
+                    "Hora_salida": 16,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "T7m": [
+                {
+                    "Hora_entrada": 14,
+                    "Hora_salida": 21,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 15,
+                    "Hora_salida": 22,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "Personal_necesario": {
+                "7": 3,
+                "8": 5,
+                "9": 6,
+                "10": 6,
+                "11": 5,
+                "12": 5,
+                "13": 5,
+                "14": 6,
+                "15": 6,
+                "16": 4,
+                "17": 3,
+                "18": 2,
+                "19": 3,
+                "20": 3,
+                "21": 1
+            },
+            "Empleados_asignados": {
+                "7": 3.0,
+                "8": 5.0,
+                "9": 5.0,
+                "10": 5.0,
+                "11": 5.0,
+                "12": 5.0,
+                "13": 5.0,
+                "14": 6.0,
+                "15": 5.0,
+                "16": 3.0,
+                "17": 3.0,
+                "18": 3.0,
+                "19": 3.0,
+                "20": 3.0,
+                "21": 2.0
+            }
+        },
+        "18-02-2025 Martes": {
+            "T8d": [
+                {
+                    "Hora_entrada": 7,
+                    "Hora_salida": 15,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 8,
+                    "Hora_salida": 16,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 9,
+                    "Hora_salida": 17,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "T7m": [
+                {
+                    "Hora_entrada": 15,
+                    "Hora_salida": 22,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "Personal_necesario": {
+                "7": 2,
+                "8": 5,
+                "9": 4,
+                "10": 5,
+                "11": 4,
+                "12": 3,
+                "13": 4,
+                "14": 4,
+                "15": 6,
+                "16": 4,
+                "17": 3,
+                "18": 2,
+                "19": 2,
+                "20": 2,
+                "21": 1
+            },
+            "Empleados_asignados": {
+                "7": 1.0,
+                "8": 2.0,
+                "9": 4.0,
+                "10": 4.0,
+                "11": 4.0,
+                "12": 4.0,
+                "13": 4.0,
+                "14": 4.0,
+                "15": 5.0,
+                "16": 4.0,
+                "17": 2.0,
+                "18": 2.0,
+                "19": 2.0,
+                "20": 2.0,
+                "21": 2.0
+            }
+        },
+        "19-02-2025 Miércoles": {
+            "T8d": [
+                {
+                    "Hora_entrada": 7,
+                    "Hora_salida": 15,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 8,
+                    "Hora_salida": 16,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 9,
+                    "Hora_salida": 17,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "T7m": [
+                {
+                    "Hora_entrada": 14,
+                    "Hora_salida": 21,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 15,
+                    "Hora_salida": 22,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "Personal_necesario": {
+                "7": 2,
+                "8": 3,
+                "9": 4,
+                "10": 5,
+                "11": 4,
+                "12": 4,
+                "13": 3,
+                "14": 4,
+                "15": 4,
+                "16": 3,
+                "17": 2,
+                "18": 3,
+                "19": 2,
+                "20": 1,
+                "21": 1
+            },
+            "Empleados_asignados": {
+                "7": 2.0,
+                "8": 3.0,
+                "9": 4.0,
+                "10": 4.0,
+                "11": 4.0,
+                "12": 4.0,
+                "13": 4.0,
+                "14": 5.0,
+                "15": 4.0,
+                "16": 3.0,
+                "17": 2.0,
+                "18": 2.0,
+                "19": 2.0,
+                "20": 2.0,
+                "21": 1.0
+            }
+        },
+        "20-02-2025 Jueves": {
+            "T8d": [
+                {
+                    "Hora_entrada": 7,
+                    "Hora_salida": 15,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 8,
+                    "Hora_salida": 16,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "T7m": [
+                {
+                    "Hora_entrada": 14,
+                    "Hora_salida": 21,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 15,
+                    "Hora_salida": 22,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "Personal_necesario": {
+                "7": 3,
+                "8": 4,
+                "9": 5,
+                "10": 4,
+                "11": 4,
+                "12": 4,
+                "13": 4,
+                "14": 5,
+                "15": 5,
+                "16": 4,
+                "17": 3,
+                "18": 3,
+                "19": 3,
+                "20": 3,
+                "21": 1
+            },
+            "Empleados_asignados": {
+                "7": 2.0,
+                "8": 4.0,
+                "9": 4.0,
+                "10": 4.0,
+                "11": 4.0,
+                "12": 4.0,
+                "13": 4.0,
+                "14": 5.0,
+                "15": 5.0,
+                "16": 3.0,
+                "17": 3.0,
+                "18": 3.0,
+                "19": 3.0,
+                "20": 3.0,
+                "21": 2.0
+            }
+        },
+        "21-02-2025 Viernes": {
+            "T8d": [
+                {
+                    "Hora_entrada": 7,
+                    "Hora_salida": 15,
+                    "empleados": 3,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 8,
+                    "Hora_salida": 16,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "T7m": [
+                {
+                    "Hora_entrada": 15,
+                    "Hora_salida": 22,
+                    "empleados": 3,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "Personal_necesario": {
+                "7": 3,
+                "8": 5,
+                "9": 5,
+                "10": 6,
+                "11": 4,
+                "12": 5,
+                "13": 4,
+                "14": 4,
+                "15": 5,
+                "16": 4,
+                "17": 3,
+                "18": 3,
+                "19": 3,
+                "20": 3,
+                "21": 1
+            },
+            "Empleados_asignados": {
+                "7": 3.0,
+                "8": 5.0,
+                "9": 5.0,
+                "10": 5.0,
+                "11": 5.0,
+                "12": 5.0,
+                "13": 5.0,
+                "14": 5.0,
+                "15": 5.0,
+                "16": 3.0,
+                "17": 3.0,
+                "18": 3.0,
+                "19": 3.0,
+                "20": 3.0,
+                "21": 3.0
+            }
+        },
+        "22-02-2025 Sábado": {
+            "T8d": [
+                {
+                    "Hora_entrada": 7,
+                    "Hora_salida": 15,
+                    "empleados": 3,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 8,
+                    "Hora_salida": 16,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 9,
+                    "Hora_salida": 17,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "T7m": [
+                {
+                    "Hora_entrada": 15,
+                    "Hora_salida": 22,
+                    "empleados": 2,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "Personal_necesario": {
+                "7": 3,
+                "8": 3,
+                "9": 5,
+                "10": 6,
+                "11": 4,
+                "12": 5,
+                "13": 5,
+                "14": 5,
+                "15": 4,
+                "16": 3,
+                "17": 2,
+                "18": 2,
+                "19": 3,
+                "20": 4,
+                "21": 1
+            },
+            "Empleados_asignados": {
+                "7": 3.0,
+                "8": 4.0,
+                "9": 5.0,
+                "10": 5.0,
+                "11": 5.0,
+                "12": 5.0,
+                "13": 5.0,
+                "14": 5.0,
+                "15": 4.0,
+                "16": 3.0,
+                "17": 2.0,
+                "18": 2.0,
+                "19": 2.0,
+                "20": 2.0,
+                "21": 2.0
+            }
+        },
+        "23-02-2025 Domingo": {
+            "T8d": [
+                {
+                    "Hora_entrada": 7,
+                    "Hora_salida": 15,
+                    "empleados": 3,
+                    "empleado": "CAJERO"
+                },
+                {
+                    "Hora_entrada": 11,
+                    "Hora_salida": 19,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "T7m": [
+                {
+                    "Hora_entrada": 15,
+                    "Hora_salida": 22,
+                    "empleados": 1,
+                    "empleado": "CAJERO"
+                }
+            ],
+            "Personal_necesario": {
+                "7": 2,
+                "8": 3,
+                "9": 3,
+                "10": 3,
+                "11": 4,
+                "12": 4,
+                "13": 4,
+                "14": 3,
+                "15": 2,
+                "16": 2,
+                "17": 1,
+                "18": 2,
+                "19": 3,
+                "20": 3,
+                "21": 1
+            },
+            "Empleados_asignados": {
+                "7": 3.0,
+                "8": 3.0,
+                "9": 3.0,
+                "10": 3.0,
+                "11": 4.0,
+                "12": 4.0,
+                "13": 4.0,
+                "14": 4.0,
+                "15": 2.0,
+                "16": 2.0,
+                "17": 2.0,
+                "18": 2.0,
+                "19": 1.0,
+                "20": 1.0,
+                "21": 1.0
+            }
+        }
+    }
+}
+reporte = asignar_horarios_empleados(Sol_ver, num_regentes=0)
+imprimir_reporte_json(reporte)
