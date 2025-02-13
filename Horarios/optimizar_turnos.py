@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
 import polars as pl
-#from django.db import connections
+from django.db import connections
 import math
 
 cfg = pl.Config(
