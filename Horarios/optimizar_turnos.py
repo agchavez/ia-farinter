@@ -679,8 +679,6 @@ def seleccionar_empleados_para_swap(emps_red: dict, emps_blue: dict, fecha_actua
 
 
 
-
-
 def asignar_horarios_empleados(solucion, num_regentes):
     """
     Asigna los horarios semanales a los empleados minimizando el número de empleados necesarios.
