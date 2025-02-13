@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
 import polars as pl
-#from django.db import connections
+from django.db import connections
 import math
 
 cfg = pl.Config(
@@ -647,6 +647,32 @@ def solver_semana(Bloque_semana, Horarios, num_regentes, cost_sub, cost_over):
             
     return solucion
 
+def seleccionar_empleados_para_swap(emps_red: dict, emps_blue: dict, fecha_actual: str, fechas) -> tuple:
+    """
+    Selecciona el primer par válido de empleados para realizar un swap de turnos.
+    Returns empty tuple if no valid swap is found.
+    """
+    fechas = sorted(fechas, key=lambda x: datetime.strptime(x.split()[0], "%d-%m-%Y"))
+    for emp_red_id, horarios_red in emps_red.items():
+        for emp_blue_id, horarios_blue in emps_blue.items():
+            # Get sets of dates for both employees
+            fechas_emp_red = {h["Dia"] for h in horarios_red}
+            fechas_emp_blue = {h["Dia"] for h in horarios_blue}
+            
+            # Find dates that red employee has but blue doesn't
+            fechas_disponibles = fechas_emp_red - fechas_emp_blue
+            
+            if fechas_disponibles:
+                # Get the closest date to fecha_actual
+                fecha_swap = min(fechas_disponibles, 
+                               key=lambda x: abs(fechas.index(x) - fechas.index(fecha_actual)))
+                return (emp_red_id, emp_blue_id, fecha_swap)
+    
+    return tuple()
+
+
+
+
 def asignar_horarios_empleados(solucion, num_regentes):
     """
     Asigna los horarios semanales a los empleados minimizando el número de empleados necesarios.
@@ -775,25 +801,27 @@ def asignar_horarios_empleados(solucion, num_regentes):
                         count_emps = {}
                         mejor_empleado = None
                         emps_red = {}
-                        emps_blue = []
+                        emps_blue = {}
 
                         for emp_id, datos in empleados.items():
                             # Filtrar por rol='Vendedor'
+                            dias_trabajados = {h["Dia"] for h in datos["Horarios"]}
                             if not datos["Rol"].startswith("Vendedor"):
                                 continue
                             if datos["turnos_pendientes"] <= 0:
-                                if fecha not in datos['Horarios']:
-                                    dia = min(
-                                        (h["Dia"] for h in datos["Horarios"]),
-                                        key=lambda d: sum(control[sucursal][d]["Personal_necesario"].values())
-                                    )
-                                    emps_red[emp_id] = dia
+                                # Replace line 785:
+                                if fecha not in dias_trabajados:
+                                    # dia = min(
+                                    #         (h["Dia"] for h in datos["Horarios"]),
+                                    #         key=lambda d: sum(control[sucursal][d]["Personal_necesario"].values())
+                                    #     )
+                                    emps_red[emp_id] = datos['Horarios']
                                 continue
                             # Verificar que no tenga ya un turno este día
-                            dias_trabajados = {h["Dia"] for h in datos["Horarios"]}
+                            
                             if fecha in dias_trabajados:
                                 if datos['turnos_pendientes'] > 0:
-                                    emps_blue.append(emp_id)
+                                    emps_blue[emp_id] = datos['Horarios']
                                 continue
 
                             # Para T6n, un empleado que ya tenga T8d/T7m no sirve
@@ -812,12 +840,12 @@ def asignar_horarios_empleados(solucion, num_regentes):
                         
                         #for e in emps_complete_turnos_sf:
                         
-                        if emps_red:
-                            print('empleados rojos:')
-                            imprimir_reporte_json(emps_red)
-                        if len(emps_blue) > 0:
-                            for e in emps_blue:
-                                print(f'el empleado {e} es azul')
+                        # if emps_red:
+                        #     print('empleados rojos:')
+                        #     imprimir_reporte_json(emps_red)
+                        # if len(emps_blue) > 0:
+                        #     for e in emps_blue:
+                        #         print(f'el empleado {e} es azul')
                         #print(f'el empleado: {emps_complete_turnos_sf} tiene turnos completos sin esta fecha.')
                         
                         # Asignar basado en count_mismo_tipo_dict
@@ -859,53 +887,60 @@ def asignar_horarios_empleados(solucion, num_regentes):
                             datos["turnos_pendientes"] -= 1
                             id_turno += 1
                             asignado = True
-
+                    
                         # 2) Si no se asignó a nadie, crear un nuevo empleado
                         if not asignado:
                             if emps_red and emps_blue:
-                                # Find red employee with closest date to current fecha
-                                emp_red_cercano = min(
-                                    emps_red.items(),
-                                    key=lambda x: abs(fechas.index(x[1]) - fechas.index(fecha))
-                                )[0]
+                                swap_result = seleccionar_empleados_para_swap(emps_red, emps_blue, fecha, fechas)
                                 
-                                # Get a blue employee (any will do since they have available shifts)
-                                emp_blue = next(iter(emps_blue))
-                                
-                                # Get the date to swap
-                                fecha_swap = emps_red[emp_red_cercano]
-                                
-                                # Remove old date from red employee
-                                empleados[emp_red_cercano]["Horarios"] = [
-                                    h for h in empleados[emp_red_cercano]["Horarios"] 
-                                    if h["Dia"] != fecha_swap
-                                ]
-                                
-                                # Add new date to red employee
-                                empleados[emp_red_cercano]["Horarios"].append({
-                                    "Dia": fecha,
-                                    "Turno": tipo_turno,
-                                    "Hora_entrada": hora_ent,
-                                    "Hora_salida": hora_sal,
-                                    "Id_turno": id_turno, 
-                                    'es_azul' : False,
-                                    'es_rojo' : True
-                                })
-                                
-                                # Add swapped date to blue employee
-                                empleados[emp_blue]["Horarios"].append({
-                                    "Dia": fecha_swap,
-                                    "Turno": tipo_turno,
-                                    "Hora_entrada": hora_ent,
-                                    "Hora_salida": hora_sal,
-                                    "Id_turno": id_turno + 1, 
-                                    'es_azul' : True,
-                                    'es_rojo' : False
-                                })
-                                empleados[emp_blue]["turnos_pendientes"] -= 1
-                                
-                                id_turno += 2
-                                asignado = True
+                                if swap_result:  # If tuple is not empty
+                                    emp_red_select, emp_blue_select, fecha_swap = swap_result
+                                    #print(f'se hizo cambio la fecha {fecha_swap} del empleado: {emp_red_select}, se le asigno a: {emp_blue_select} para la fecha:  {fecha}')
+                                    empleados[emp_red_select]["Horarios"] = [
+                                        h for h in empleados[emp_red_select]["Horarios"] 
+                                        if h["Dia"] != fecha_swap
+                                    ]
+                                    
+                                    # Add new date to red employee
+                                    empleados[emp_red_select]["Horarios"].append({
+                                        "Dia": fecha,
+                                        "Turno": tipo_turno,
+                                        "Hora_entrada": hora_ent,
+                                        "Hora_salida": hora_sal,
+                                        "Id_turno": id_turno
+                                    })
+                                    
+                                    # Add swapped date to blue employee
+                                    empleados[emp_blue_select]["Horarios"].append({
+                                        "Dia": fecha_swap,
+                                        "Turno": tipo_turno,
+                                        "Hora_entrada": hora_ent,
+                                        "Hora_salida": hora_sal,
+                                        "Id_turno": id_turno + 1
+                                    })
+                                    empleados[emp_blue_select]["turnos_pendientes"] -= 1
+                                    
+                                    id_turno += 2
+                                    asignado = True
+                                else:
+                                    new_emp_id = f"empleado_{id_empleado}"
+                                    empleados[new_emp_id] = {
+                                        "Rol": "Vendedor",
+                                        "turnos_pendientes": 6,
+                                        "Horarios": []
+                                    }
+                                    empleados[new_emp_id]["Horarios"].append({
+                                        "Dia": fecha,
+                                        "Turno": tipo_turno,
+                                        "Hora_entrada": hora_ent,
+                                        "Hora_salida": hora_sal,
+                                        "Id_turno": id_turno,
+                                        'es_azul' : False,
+                                        'es_rojo' : False
+                                    })
+                                    empleados[new_emp_id]["turnos_pendientes"] -= 1
+                                    id_turno += 1
+                                    id_empleado += 1
                             else:
                                 new_emp_id = f"empleado_{id_empleado}"
                                 empleados[new_emp_id] = {
@@ -1479,8 +1514,8 @@ solucion_rastrear = {
     }
     }
 }
-#solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes,
-#                        cost_sub = 1.5, cost_over = 1)
+solution = solver_semana(Bloque_semana_t1, Horarios1, num_regentes,
+                        cost_sub = 1.5, cost_over = 1)
 #imprimir_reporte_json(solution)
 #reporte = asignar_horarios_empleados(solucion_rastrear, num_regentes = 0)
 #imprimir_reporte_json(reporte)
