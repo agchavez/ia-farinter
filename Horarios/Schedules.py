@@ -188,5 +188,5 @@ def Obtener_Horario(Suc_Id: str) -> dict:
 
     
 
-horarios = Obtener_Horario(int('1'))
+horarios = Obtener_Horario(int('107'))
 print(horarios)
